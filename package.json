@@ -1,0 +1,12 @@
+{
+  "name": "whiteboard",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "cd apps/web && yarn dev"
+  }
+}
