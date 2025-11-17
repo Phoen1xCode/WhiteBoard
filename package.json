@@ -8,5 +8,8 @@
   ],
   "scripts": {
     "dev:web": "cd apps/web && yarn dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
