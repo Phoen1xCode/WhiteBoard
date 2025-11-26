@@ -4,7 +4,7 @@ import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 let socket: Socket | null = null;
 
 export function connect(boardId: string) {
-  const url = import.meta.env.VITE_WS_URL ?? "http://localhost:4000";
+  const url = import.meta.env.VITE_WS_URL ?? "http://localhost:3000";
   socket = io(url);
   socket.on("connect", () => {
     socket?.emit("join-board", { boardId });
