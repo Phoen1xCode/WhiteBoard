@@ -3,11 +3,21 @@ import { produce } from "immer";
 import type {
   WhiteBoardElement,
   WhiteBoardOperation,
+  ShapeType,
 } from "@whiteboard/shared/types";
 import { sendOp } from "../lib/socket";
 
+type DrawingStyle = {
+  strokeColor: string;
+  strokeWidth: number;
+  fillColor?: string;
+  strokeDashArray?: number[];
+};
+
 type State = {
   elements: Record<string, WhiteBoardElement>;
+  currentTool: ShapeType;
+  currentStyle: DrawingStyle;
 };
 
 type Actions = {
@@ -16,10 +26,18 @@ type Actions = {
     operation: WhiteBoardOperation,
     options?: { local?: boolean }
   ) => void;
+  setCurrentTool: (tool: ShapeType) => void;
+  setCurrentStyle: (style: Partial<DrawingStyle>) => void;
 };
 
 export const useWhiteboardStore = create<State & Actions>((set) => ({
   elements: {},
+  currentTool: "freehand",
+  currentStyle: {
+    strokeColor: "#000000",
+    strokeWidth: 2,
+    fillColor: undefined,
+  },
 
   setInitialElements: (elements) => {
     set(() => ({
@@ -37,10 +55,10 @@ export const useWhiteboardStore = create<State & Actions>((set) => ({
             draft.elements[operation.element.id] = operation.element;
             break;
           case "update":
-            Object.assign(draft.elements[operation.boardId], operation.changes);
+            Object.assign(draft.elements[operation.elementId], operation.changes);
             break;
           case "delete":
-            delete draft.elements[operation.boardId];
+            delete draft.elements[operation.elementId];
             break;
           case "clear":
             draft.elements = {};
@@ -48,8 +66,20 @@ export const useWhiteboardStore = create<State & Actions>((set) => ({
         }
       })
     );
-    if (!local) {
+    if (local) {
       sendOp(operation);
     }
+  },
+
+  setCurrentTool: (tool) => {
+    set({ currentTool: tool });
+  },
+
+  setCurrentStyle: (style) => {
+    set(
+      produce((draft: State) => {
+        Object.assign(draft.currentStyle, style);
+      })
+    );
   },
 }));
