@@ -1,9 +1,13 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
 
+/**
+ * 线型选择器组件
+ * 支持实线和虚线两种线型切换
+ */
 interface LineStyleSelectorProps {
-  value?: number[];
-  onChange: (value?: number[]) => void;
+  value?: number[]; // 当前线型值，undefined为实线，数组为虚线
+  onChange: (value?: number[]) => void; // 线型变化回调
 }
 
 export function LineStyleSelector({ value, onChange }: LineStyleSelectorProps) {
@@ -12,7 +16,7 @@ export function LineStyleSelector({ value, onChange }: LineStyleSelectorProps) {
   return (
     <div className="space-y-3">
       <Label className="text-xs font-medium text-muted-foreground">
-        Line Style
+        线条样式
       </Label>
       <ToggleGroup
         type="single"
