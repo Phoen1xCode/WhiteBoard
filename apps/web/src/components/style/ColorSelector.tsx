@@ -1,22 +1,24 @@
-import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
+/**
+ * 颜色选择器组件
+ * 支持预设颜色选择和自定义颜色输入
+ */
 interface ColorSelectorProps {
-  label: string;
-  value: string;
-  onChange: (color: string) => void;
-  presetColors?: string[];
+  value: string; // 当前颜色值
+  onChange: (color: string) => void; // 颜色变化回调
+  presetColors?: string[]; // 预设颜色数组
 }
 
 export function ColorSelector({
-  label,
   value,
   onChange,
   presetColors,
@@ -24,7 +26,7 @@ export function ColorSelector({
   return (
     <div className="space-y-3">
       <Label className="text-xs font-medium text-muted-foreground">
-        {label}
+        线条颜色
       </Label>
       <div className="flex items-center gap-3">
         <Popover>
@@ -35,7 +37,7 @@ export function ColorSelector({
               style={{ backgroundColor: value }}
               aria-label={`Current color: ${value}`}
             >
-              <span className="sr-only">{label}</span>
+              <span className="sr-only">线条颜色</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3" align="start">
@@ -46,14 +48,15 @@ export function ColorSelector({
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
                   className="h-10 w-14 p-1 cursor-pointer"
-                  aria-label={label}
+                  aria-label={"Select stroke color"}
                 />
                 <Input
                   type="text"
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
                   className="h-10 w-24 font-mono text-xs uppercase"
-                  placeholder="#000000"
+                  placeholder="#1E1E1E"
+                  aria-label={"Enter stroke color"}
                 />
               </div>
               {presetColors && (

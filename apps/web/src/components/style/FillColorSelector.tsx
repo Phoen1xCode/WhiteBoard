@@ -1,37 +1,33 @@
-import { Label } from "@/components/ui/label";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
 
-const FILL_PRESET_COLORS = [
-  "#FFFFFF", // White
-  "#F8F9FA", // Light Gray
-  "#FFE6E6", // Light Red
-  "#E6FFE6", // Light Green
-  "#E6E6FF", // Light Blue
-  "#FFFCE6", // Light Yellow
-  "#FFE6FF", // Light Magenta
-  "#E6FFFF", // Light Cyan
-  "#FFF0E6", // Light Orange
-  "#F3E6FF", // Light Purple
-];
-
+/**
+ * 填充颜色选择器组件
+ * 支持可选的填充颜色设置，包含清空功能
+ */
 interface FillColorSelectorProps {
-  value?: string;
-  onChange: (value?: string) => void;
+  value?: string; // 当前填充颜色值，可选
+  onChange: (value?: string) => void; // 颜色变化回调
+  presetColors?: string[]; // 预设颜色数组，可选
 }
 
-export function FillColorSelector({ value, onChange }: FillColorSelectorProps) {
+export function FillColorSelector({
+  value,
+  onChange,
+  presetColors,
+}: FillColorSelectorProps) {
   return (
     <div className="space-y-3">
       <Label className="text-xs font-medium text-muted-foreground">
-        Fill Color (Optional)
+        填充颜色（可选）
       </Label>
       <div className="flex items-center gap-3">
         <Popover>
@@ -43,11 +39,9 @@ export function FillColorSelector({ value, onChange }: FillColorSelectorProps) {
                 !value && "bg-transparent"
               )}
               style={value ? { backgroundColor: value } : undefined}
-              aria-label={value ? `Current fill color: ${value}` : "No fill color"}
+              aria-label={value ? `当前填充颜色: ${value}` : "无填充颜色"}
             >
-              {!value && (
-                <X className="h-4 w-4 text-muted-foreground" />
-              )}
+              {!value && <X className="h-4 w-4 text-muted-foreground" />}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3" align="start">
@@ -68,24 +62,27 @@ export function FillColorSelector({ value, onChange }: FillColorSelectorProps) {
                   placeholder="None"
                 />
               </div>
-              <div className="grid grid-cols-5 gap-1.5">
-                {FILL_PRESET_COLORS.map((color) => (
-                  <Button
-                    key={color}
-                    variant="outline"
-                    size="icon"
-                    onClick={() => onChange(color)}
-                    className={cn(
-                      "h-7 w-7 rounded-md border-2 p-0 transition-all hover:scale-110",
-                      value === color
-                        ? "ring-2 ring-primary ring-offset-2"
-                        : "border-border"
-                    )}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Select fill color ${color}`}
-                  />
-                ))}
-              </div>
+              {presetColors && (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {presetColors.map((color) => (
+                    <Button
+                      key={color}
+                      variant="outline"
+                      size="icon"
+                      onClick={() => onChange(color)}
+                      className={cn(
+                        "h-7 w-7 rounded-md border-2 p-0 transition-all hover:scale-110",
+                        value === color
+                          ? "ring-2 ring-primary ring-offset-2"
+                          : "border-border"
+                      )}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Select fill color ${color}`}
+                    />
+                  ))}
+                </div>
+              )}
+
               <Button
                 variant="secondary"
                 size="sm"
@@ -93,7 +90,7 @@ export function FillColorSelector({ value, onChange }: FillColorSelectorProps) {
                 className="w-full"
               >
                 <X className="h-4 w-4 mr-2" />
-                Clear Fill
+                清除填充颜色
               </Button>
             </div>
           </PopoverContent>
