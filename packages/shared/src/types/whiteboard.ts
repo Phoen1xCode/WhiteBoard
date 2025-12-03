@@ -1,6 +1,6 @@
 // packages/shared/src/types/whiteboard.ts
 
-export type ShapeType = "freehand" | "rectangle" | "circle" | "line" | "text";
+export type ShapeType = "freehand" | "rectangle" | "circle" | "line" | "text" | "eraser";
 
 export interface BaseElement {
   id: string;
