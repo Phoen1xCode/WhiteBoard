@@ -112,7 +112,7 @@ State is managed using **Zustand + Immer** (see `apps/web/src/store/whiteboardSt
 ### WebSocket Flow
 
 1. **Client connects** → joins board room via `join-board` event (`apps/server/src/ws/socket.ts:8`)
-2. **Local edit** → `applyOperation(op, {local: false})` → `sendOp()` broadcasts to server
+2. **Local edit** → `applyOperation(op, {local: false})` → `sendOperation()` broadcasts to server
 3. **Server** → forwards operation to other clients in the same board room (`socket.to(boardId).emit("op", op)`)
 4. **Other clients** → receive operation → `applyOperation(op, {local: true})` updates UI
 
@@ -134,7 +134,7 @@ PostgreSQL is used for persistence. After schema changes, run `yarn prisma:gener
 
 - Uses **Konva.js** with **react-konva** for canvas manipulation
 - Elements are rendered in `apps/web/src/components/whiteboard/Canvas.tsx`
-- Currently supports `freehand` drawing (see `ShapeType` in `packages/shared/src/types/whiteboard.ts`)
+- Supported shape types: `freehand`, `rectangle`, `circle`, `line` (see `ShapeType` in `packages/shared/src/types/whiteboard.ts`)
 
 ### REST API Endpoints
 
@@ -194,103 +194,3 @@ Socket.IO events (see `apps/server/src/ws/socket.ts`):
 **Backend**: Node.js, Koa, Socket.IO, Prisma, PostgreSQL
 
 **Tooling**: ESLint, Prettier
-
----
-
-## 📊 Development Progress
-
-> **Last Updated**: 2024-11-18 (Completed Task 2.2.1)
-> **Current Progress**: 40%
-> **Current Stage**: Stage 2 - P0 Core Features
-> **Deadline**: 2024-12-04
-
-### Quick Status
-
-- ✅ Stage 1: Architecture Setup (100%)
-- 🚧 Stage 2: P0 Core Features (60%)
-- ⏳ Stage 3: P1 Features (0%)
-- ⏳ Stage 4: Challenge Features (0%)
-- ⏳ Stage 5: UI/UX Optimization (0%)
-- ⏳ Stage 6: Testing & Deployment (0%)
-
-### Detailed Task List
-
-**See [ROADMAP.md](./ROADMAP.md) for detailed development plan.**
-
-#### 🚧 Stage 2: P0 Core Features (Current)
-
-**Task 2.1: Extend Drawing Tools** (Expected: 2 days)
-
-- [x] 2.1.1 - Extend type definitions: Add Rectangle, Circle, Line types to shared/types
-- [x] 2.1.2 - Implement RectangleTool.tsx component (integrated in Canvas)
-- [x] 2.1.3 - Implement CircleTool.tsx component (integrated in Canvas)
-- [x] 2.1.4 - Implement LineTool.tsx component (integrated in Canvas)
-- [x] 2.1.5 - Create Toolbar.tsx component for tool switching
-
-**Task 2.2: Style Control System** (Expected: 1.5 days)
-
-- [x] 2.2.1 - Create StylePanel.tsx (color picker, stroke width, line style)
-- [x] 2.2.2 - Add currentStyle state to whiteboardStore
-- [x] 2.2.3 - Apply styles to drawing tools (color, stroke width, solid/dashed)
-
-**Task 2.3: Element Selection & Editing** (Expected: 2 days)
-
-- [ ] 2.3.1 - Implement element selection with Konva Transformer
-- [ ] 2.3.2 - Create PropertyPanel.tsx for editing selected element
-- [ ] 2.3.3 - Implement delete functionality (button + Delete key)
-
-**Task 2.4: Share Functionality** (Expected: 1.5 days)
-
-- [ ] 2.4.1 - Install and configure React Router
-- [ ] 2.4.2 - Implement routes: home page and /board/:id
-- [ ] 2.4.3 - Add share link copy functionality
-
-#### ⏳ Stage 3: P1 Features
-
-**Task 3.1: Undo/Redo** (Expected: 2 days)
-
-- [ ] 3.1.1 - Design and implement Undo/Redo history stack
-- [ ] 3.1.2 - Add Undo/Redo buttons to toolbar
-
-**Task 3.2: Keyboard Shortcuts** (Expected: 1 day)
-
-- [ ] 3.2.1 - Implement useKeyboardShortcuts hook (Ctrl+Z, tool switching, Delete, etc.)
-
-**Task 3.3: Real-time Sync Optimization** (Expected: 1 day)
-
-- [ ] 3.3.1 - Add connection status management and reconnection logic
-
-#### ⏳ Stage 4: Challenge Features (Optional)
-
-**Task 4.1: Real-time Cursor Display** (Expected: 1.5 days)
-
-- [ ] 4.1.1 - Implement real-time cursor position sync and rendering
-
-**Task 4.2: Eraser Tool** (Expected: 1 day)
-
-- [ ] 4.2.1 - Implement eraser tool with collision detection
-
-#### ⏳ Stage 5: UI/UX Optimization (Expected: 2 days)
-
-- [ ] 5.1 - UI beautification following Excalidraw design
-- [ ] 5.2 - User experience improvements (loading states, error handling, etc.)
-
-#### ⏳ Stage 6: Testing & Deployment (Expected: 2 days)
-
-- [ ] 6.1 - Functional and collaborative testing
-- [ ] 6.2 - Documentation and demo video preparation
-- [ ] 6.3 - Optional: Docker deployment setup
-
----
-
-## 🎯 Next Steps
-
-**Current Task**: Task 2.3.1 - Element Selection with Transformer
-
-**To Continue Development**, say one of:
-
-- "Start task 2.1" / "开始实现扩展绘图工具"
-- "Continue development" / "继续开发"
-- "What's next?" / "接下来做什么"
-
-**Note**: This progress section will be automatically updated as tasks are completed.
