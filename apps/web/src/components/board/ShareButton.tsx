@@ -33,12 +33,12 @@ export function ShareButton({ boardId }: ShareButtonProps) {
       {copied ? (
         <>
           <Check size={18} />
-          <span>Copied!</span>
+          <span>已复制!</span>
         </>
       ) : (
         <>
           <Share2 size={18} />
-          <span>Share</span>
+          <span>分享</span>
         </>
       )}
     </Button>
