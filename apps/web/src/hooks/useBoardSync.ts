@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { connect, disconnect, onOp, offOp } from "../lib/socket";
+import { connect, disconnect, onOperation, offOperation } from "../lib/socket";
 import { useWhiteboardStore } from "../store/whiteboardStore";
 import { getBoard } from "../lib/api";
 import type { WhiteBoardOperation } from "@whiteboard/shared/types";
@@ -21,11 +21,11 @@ export function useBoardSync(boardId: string) {
     const handler = (op: WhiteBoardOperation) => {
       applyOperation(op, { local: false });
     };
-    onOp(handler);
+    onOperation(handler);
 
     return () => {
       mounted = false;
-      offOp(handler);
+      offOperation(handler);
       disconnect(boardId);
     };
   }, [boardId, setInitialElements, applyOperation]);
