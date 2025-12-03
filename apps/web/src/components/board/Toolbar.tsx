@@ -18,7 +18,6 @@ import {
   Redo2,
   Eraser,
   MousePointer,
-  Undo,
 } from "lucide-react";
 
 const tools = [
