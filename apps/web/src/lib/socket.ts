@@ -69,6 +69,14 @@ export function connect(boardId: string) {
   });
 }
 
+function isSocketConnected(): boolean {
+  if (!socket?.connected) {
+    console.warn("Socket is not connected.");
+    return false;
+  }
+  return true;
+}
+
 export function disconnect(boardId: string) {
   if (!socket) return;
   socket.emit("leave-board", { boardId });
@@ -94,6 +102,9 @@ export function offOperation(
 
 // Cursor events for real-time cursor display
 export function sendCursor(boardId: string, x: number, y: number) {
+  if (!isSocketConnected()) {
+    console.warn("Cannot send cursor data.");
+  }
   socket?.emit("cursor", { boardId, x, y });
 }
 
@@ -104,10 +115,16 @@ export type CursorData = {
 };
 
 export function onCursor(handler: (data: CursorData) => void) {
+  if (!isSocketConnected()) {
+    console.warn("Cannot listen to cursor data.");
+  }
   socket?.on("cursor", handler);
 }
 
 export function offCursor(handler: (data: CursorData) => void) {
+  if (!isSocketConnected()) {
+    console.warn("Cannot stop listening to cursor data.");
+  }
   socket?.off("cursor", handler);
 }
 
