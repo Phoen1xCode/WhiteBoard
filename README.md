@@ -201,51 +201,88 @@ yarn prisma:generate   # 生成 Prisma Client
 yarn prisma:migrate    # 运行数据库迁移
 ```
 
-## 🐳 Docker 部署
+## Docker 部署
 
 ### 前置要求
 
 - Docker >= 20.10
 - Docker Compose >= 2.0
 
-### 快速部署
+### 部署命令
 
-1. **配置环境变量**
+```bash
+# 进入 docker 目录并启动所有服务
+cd docker && docker compose up -d --build
+```
+
+### 详细部署步骤
+
+1. **配置环境变量（可选）**
 
 ```bash
 # 复制环境变量示例文件
-cp .env.docker.example .env.docker
+cp docker/.env.docker.example docker/.env.docker
 
-# 编辑配置（可选）
-vim .env.docker
+# 编辑配置（可选，默认配置可直接使用）
+vim docker/.env.docker
 ```
 
 2. **构建并启动服务**
 
 ```bash
-# 构建并启动所有服务
-docker-compose --env-file .env.docker up -d --build
+# 进入 docker 目录
+cd docker
+
+# 构建并启动所有服务（使用自定义环境变量）
+docker compose --env-file .env.docker up -d --build
+
+# 或直接使用默认配置启动
+docker compose up -d --build
 
 # 查看服务状态
-docker-compose ps
+docker compose ps
 
 # 查看日志
-docker-compose logs -f
+docker compose logs -f
+
+# 查看特定服务日志
+docker compose logs -f server
 ```
 
-3. **访问应用**
+### 常用 Docker 命令
 
-- 前端：http://localhost
-- 后端 API：http://localhost:3000
+```bash
+# 停止所有服务
+cd docker && docker-compose down
+
+# 停止并删除数据卷
+cd docker && docker-compose down -v
+
+# 重新构建并启动
+cd docker && docker-compose up -d --build
+
+# 仅重启某个服务
+cd docker && docker-compose restart server
+```
 
 ### Docker 服务说明
 
 | 服务     | 端口 | 说明                 |
 | -------- | ---- | -------------------- |
 | web      | 80   | 前端 Nginx 服务      |
-| server   | 4000 | 后端 API + WebSocket |
+| server   | 3000 | 后端 API + WebSocket |
 | postgres | 5432 | PostgreSQL 数据库    |
 
+### Docker 文件结构
+
+```
+docker/
+├── Dockerfile           # 多阶段构建文件
+├── docker-compose.yml   # 服务编排配置
+├── nginx.conf           # Nginx 配置
+├── entrypoint.sh        # 服务器启动脚本（含数据库迁移）
+└── .env.docker.example  # 环境变量示例
+```
 
 ## ⌨️ 键盘快捷键
 
