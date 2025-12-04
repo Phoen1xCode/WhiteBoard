@@ -30,7 +30,7 @@ FROM base AS web-builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+# Skip copying shared node_modules as it has no dependencies
 
 # Copy source files
 COPY packages/shared ./packages/shared
@@ -55,12 +55,12 @@ FROM base AS server-builder
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+# Skip copying shared node_modules as it has no dependencies
 
 # Copy source files
 COPY packages/shared ./packages/shared
 COPY apps/server ./apps/server
-COPY prisma ./prisma
+COPY apps/server/prisma ./prisma
 COPY package.json yarn.lock ./
 
 # Generate Prisma client
@@ -78,14 +78,18 @@ ENV NODE_ENV=production
 COPY --from=server-builder /app/node_modules ./node_modules
 COPY --from=server-builder /app/apps/server ./apps/server
 COPY --from=server-builder /app/packages/shared ./packages/shared
-COPY --from=server-builder /app/prisma ./prisma
+COPY --from=server-builder /app/apps/server/prisma ./prisma
 COPY package.json ./
+
+# Copy entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 WORKDIR /app/apps/server
 
 EXPOSE 3000
 
-CMD ["yarn", "start"]
+CMD ["/entrypoint.sh"]
 
 # ============================================
 # Stage 6: Production web image (nginx)
