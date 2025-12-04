@@ -263,7 +263,7 @@ cd docker && docker-compose restart server
 
 | 服务     | 端口 | 说明                 |
 | -------- | ---- | -------------------- |
-| web      | 80   | 前端 Nginx 服务      |
+| web      | 8080 | 前端 Nginx 服务      |
 | server   | 3000 | 后端 API + WebSocket |
 | postgres | 5432 | PostgreSQL 数据库    |
 
@@ -292,6 +292,6 @@ docker/
 | `Ctrl+Y` / `Cmd+Shift+Z` | 重做             |
 | `Escape`                 | 取消选中         |
 
-## 👥 作者
+## 作者
 
 [@Phoen1xCode](https://github.com/Phoen1xCode)
