@@ -160,22 +160,306 @@ WhiteBoard/
 
 ## 架构设计
 
-### 实时协作原理
+### 整体架构
 
-本项目采用 **Operation-based Synchronization** 实现实时协作：
+WhiteBoard 采用前后端分离的 Monorepo 架构，通过 Yarn Workspaces 统一管理依赖。整体架构分为三层：
 
-1. **初始同步**：客户端连接时从数据库加载白板快照
-2. **操作流式同步**：所有编辑操作通过 Socket.IO 实时广播
-3. **乐观更新**：本地操作立即应用，无需等待服务器响应
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        前端层 (React)                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │  Canvas 渲染 │  │  状态管理    │  │  WebSocket   │       │
+│  │  (Konva.js)  │  │  (Zustand)   │  │  客户端      │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+                            ↕ HTTP/WebSocket
+┌─────────────────────────────────────────────────────────────┐
+│                      后端层 (Node.js)                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │  REST API    │  │  Socket.IO   │  │  业务逻辑    │       │
+│  │  (Koa)       │  │  服务器      │  │  (Service)   │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+└─────────────────────────────────────────────────────────────┘
+                            ↕ Prisma ORM
+┌─────────────────────────────────────────────────────────────┐
+│                    数据持久层 (PostgreSQL)                  │
+│                 Board 表 (id, title, snapshot)              │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### 操作类型
+### 核心设计理念
 
-所有白板修改通过统一的 `WhiteBoardOperation` 类型：
+#### 1. 实时协作模型
 
-- `add` - 添加新元素
-- `update` - 修改现有元素
-- `delete` - 删除元素
-- `clear` - 清空画板
+本项目采用基于操作的同步机制实现多人实时协作，这是一种高效且可靠的协作方案：
+
+**工作流程：**
+
+```
+客户端 A                    服务器                    客户端 B
+   │                         │                         │
+   │  1. 加载白板快照 (HTTP) │                         │
+   │ ◄─────────────────────  │                         │
+   │                         │                         │
+   │  2. 加入房间 WebSocket  │                         │
+   │ ─────────────────────►  │                         │
+   │                         │                         │
+   │  3. 本地绘制操作        │                         │
+   │  (立即更新 UI)          │                         │
+   │                         │                         │
+   │  4. 广播操作            │                         │
+   │ ─────────────────────►  │  5. 转发操作            │
+   │                         │ ─────────────────────►  │
+   │                         │                         │
+   │                         │  6. 持久化到数据库      │
+   │                         │ ─────────────────────► Database
+   │                         │                         │
+   │                         │  7. 应用操作 (更新 UI)  │
+   │                         │                         │
+```
+
+三个阶段：
+
+1. 初始同步（Snapshot Loading）
+
+   - 客户端通过 REST API (`GET /api/v1/boards/:id`) 获取白板快照
+   - 快照包含所有元素的完整状态
+   - 使用 `setInitialElements()` 初始化本地状态
+
+2. 操作流式同步（Operation Streaming）
+
+   - 所有后续修改通过 WebSocket 以操作（Operation）形式传输
+   - 操作是轻量级的增量更新，而非完整状态
+   - 通过 Socket.IO 的房间机制实现多白板隔离
+
+3. 乐观更新（Optimistic Update）
+   - 本地操作立即应用到 UI，无需等待服务器确认
+   - 操作同时广播给其他客户端
+
+#### 2. 操作类型定义
+
+所有白板修改通过 `WhiteBoardOperation` 类型定义，确保类型安全和一致性：
+
+```typescript
+type WhiteBoardOperation =
+  | { type: "add"; boardId: string; element: WhiteBoardElement }
+  | {
+      type: "update";
+      boardId: string;
+      elementId: string;
+      changes: Partial<WhiteBoardElement>;
+    }
+  | { type: "delete"; boardId: string; elementId: string }
+  | { type: "clear"; boardId: string };
+```
+
+**操作类型说明：**
+
+- **`add`** - 添加新元素到画板（绘制新图形）
+- **`update`** - 修改现有元素属性（拖动、缩放、改变样式）
+- **`delete`** - 删除指定元素（橡皮擦、删除键）
+- **`clear`** - 清空整个画板
+
+#### 3. 状态管理架构
+
+使用 **Zustand + Immer** 实现不可变状态管理：
+
+**核心状态结构：**
+
+```typescript
+{
+  elements: Record<string, WhiteBoardElement>,  // 元素字典，O(1) 查找
+  currentTool: ShapeType,                       // 当前工具
+  currentStyle: DrawingStyle,                   // 当前样式
+  selectedElementId: string | null,             // 选中元素
+  undoStack: HistoryEntry[],                    // 撤销栈
+  redoStack: HistoryEntry[]                     // 重做栈
+}
+```
+
+**操作应用逻辑：**
+
+```typescript
+applyOperation(operation, { local, recordHistory });
+```
+
+- `local: true` - 本地操作，需要广播给其他客户端
+- `local: false` - 远程操作，仅应用到本地状态
+- `recordHistory: true` - 记录到历史栈，支持撤销/重做
+
+#### 4. 撤销/重做机制
+
+实现了完整的 Undo/Redo 功能，基于逆向操作模式：
+
+**工作原理：**
+
+1. 每个操作执行时，自动生成其逆向操作
+2. 原始操作和逆向操作作为一对存入历史栈
+3. 撤销时应用逆向操作，重做时重新应用原始操作
+4. 撤销/重做操作同样通过 WebSocket 同步给其他客户端
+
+**逆向操作映射：**
+
+| 原始操作            | 逆向操作                   |
+| ------------------- | -------------------------- |
+| add(element)        | delete(elementId)          |
+| delete(elementId)   | add(element)               |
+| update(id, changes) | update(id, originalValues) |
+
+**历史栈管理：**
+
+- 限制最大容量为 50 条，防止内存溢出
+- 执行新操作时自动清空重做栈
+- 支持跨客户端的撤销/重做同步
+
+### 技术方案详解
+
+#### 前端技术方案
+
+**1. Canvas 渲染引擎 (Konva.js)**
+
+选择 Konva.js 作为渲染引擎的原因：
+
+- 基于 Canvas API，性能优异
+- 提供完整的图形变换能力（拖动、缩放、旋转）
+- 支持事件系统，易于实现交互
+- React 集成良好（react-konva）
+
+**核心渲染流程：**
+
+```typescript
+Canvas 组件
+  ├─ Stage (画布容器)
+  │   ├─ Layer (图层)
+  │   │   ├─ 已保存元素渲染 (elements.map(renderElement))
+  │   │   ├─ 正在绘制元素渲染 (currentShape)
+  │   │   └─ Transformer (选中元素的变换控制器)
+```
+
+**2. 绘图工具实现**
+
+支持多种绘图工具，每种工具有独立的绘制逻辑：
+
+| 工具                | 实现方式           | 数据结构                        |
+| ------------------- | ------------------ | ------------------------------- |
+| 自由线条 (freehand) | 记录鼠标轨迹点数组 | `points: [x1, y1, x2, y2, ...]` |
+| 矩形 (rectangle)    | 起点 + 宽高        | `x, y, width, height`           |
+| 圆形 (circle)       | 圆心 + 半径        | `x, y, radius`                  |
+| 直线 (line)         | 起点 + 终点        | `points: [x1, y1, x2, y2]`      |
+| 选择 (select)       | Transformer 控制   | 无数据，仅交互                  |
+| 橡皮擦 (eraser)     | 碰撞检测 + 删除    | 无数据，仅交互                  |
+
+**3. 实时光标显示**
+
+实现了多用户光标位置的实时显示：
+
+```typescript
+// 发送光标位置
+sendCursor(boardId, x, y);
+
+// 接收其他用户光标
+onCursor((data: { clientId; x; y }) => {
+  // 渲染其他用户的光标
+});
+```
+
+**4. 连接状态管理**
+
+实现了完善的 WebSocket 连接状态管理：
+
+```typescript
+type ConnectionStatus =
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "reconnecting";
+```
+
+- 自动重连机制（最多 10 次，延迟 1-5 秒）
+- 重连后自动重新加入白板房间
+- 连接状态实时显示给用户
+
+#### 后端技术方案
+
+**1. REST API 设计**
+
+提供标准的 RESTful API 用于白板 CRUD 操作：
+
+| 方法   | 路径                 | 功能         | 说明           |
+| ------ | -------------------- | ------------ | -------------- |
+| GET    | `/api/v1/boards`     | 获取白板列表 | 按更新时间倒序 |
+| POST   | `/api/v1/boards`     | 创建新白板   | 返回空白板快照 |
+| GET    | `/api/v1/boards/:id` | 获取白板详情 | 返回完整快照   |
+| DELETE | `/api/v1/boards/:id` | 删除白板     | 物理删除       |
+
+**2. WebSocket 事件系统**
+
+基于 Socket.IO 实现的实时通信协议：
+
+**客户端 → 服务器：**
+
+| 事件          | 数据                  | 功能         |
+| ------------- | --------------------- | ------------ |
+| `join-board`  | `{ boardId }`         | 加入白板房间 |
+| `leave-board` | `{ boardId }`         | 离开白板房间 |
+| `op`          | `WhiteBoardOperation` | 发送操作     |
+| `cursor`      | `{ boardId, x, y }`   | 发送光标位置 |
+
+**服务器 → 客户端：**
+
+| 事件     | 数据                  | 功能             |
+| -------- | --------------------- | ---------------- |
+| `op`     | `WhiteBoardOperation` | 接收其他用户操作 |
+| `cursor` | `{ clientId, x, y }`  | 接收其他用户光标 |
+
+**3. 房间隔离机制**
+
+使用 Socket.IO 的房间（Room）功能实现多白板隔离：
+
+```typescript
+// 客户端加入房间
+socket.join(boardId);
+
+// 广播给房间内其他客户端
+socket.to(boardId).emit("op", operation);
+```
+
+**4. 数据持久化策略**
+
+采用 **快照 + 实时持久化** 的混合策略：
+
+- **快照存储**：完整的白板状态存储在 `Board.snapshot` JSON 字段
+- **实时持久化**：每个操作在转发给其他客户端的同时，异步持久化到数据库
+- **错误处理**：持久化失败不影响实时协作，仅记录错误日志
+
+```typescript
+// 操作持久化流程
+socket.on("op", async (operation) => {
+  // 1. 立即转发给其他客户端（优先保证实时性）
+  socket.to(boardId).emit("op", operation);
+
+  // 2. 异步持久化到数据库
+  try {
+    await applyOperationToSnapshot(boardId, operation);
+  } catch (error) {
+    console.error("Failed to persist operation:", error);
+  }
+});
+```
+
+#### 数据库设计
+
+**Board 表结构：**
+
+```prisma
+model Board {
+  id        String   @id @default(cuid())
+  title     String
+  snapshot  Json     // { elements: [...] }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
 
 ## 🔧 开发命令
 
