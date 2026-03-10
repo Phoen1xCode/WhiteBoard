@@ -1,46 +1,65 @@
-import type { Server, Socket } from "socket.io";
-import type { WhiteBoardOperation } from "@whiteboard/shared/types";
+import type { ServerWebSocket } from "bun";
+import type { WsClientMessage, WsServerMessage } from "@whiteboard/shared/types/ws";
 import { applyOperationToSnapshot } from "../services/boardsService";
 
-export function initSocket(io: Server) {
-  io.on("connection", (socket: Socket) => {
-    // console message
-    console.log("client connected", socket.id);
+export type WsData = { clientId: string; boardId: string | null };
 
-    socket.on("disconnect", () => {
-      console.log("client disconnected", socket.id);
-    });
+export const wsHandlers = {
+  open(ws: ServerWebSocket<WsData>) {
+    console.log("client connected", ws.data.clientId);
+  },
 
-    socket.on("join-board", ({ boardId }) => {
-      socket.join(boardId);
-    });
+  async message(ws: ServerWebSocket<WsData>, raw: string | Buffer) {
+    let msg: WsClientMessage;
+    try {
+      msg = JSON.parse(raw.toString());
+    } catch {
+      console.warn("Received malformed WS message, ignoring.");
+      return;
+    }
 
-    socket.on("leave-board", ({ boardId }) => {
-      socket.leave(boardId);
-    });
+    switch (msg.type) {
+      case "join-board":
+        ws.data.boardId = msg.boardId;
+        ws.subscribe(msg.boardId);
+        break;
 
-    socket.on("op", async (operation: WhiteBoardOperation) => {
-      const boardId = operation.boardId;
+      case "leave-board":
+        ws.unsubscribe(msg.boardId);
+        ws.data.boardId = null;
+        break;
 
-      // 转发给其他客户端
-      socket.to(boardId).emit("op", operation);
-
-      // 持久化到数据库
-      try {
-        await applyOperationToSnapshot(boardId, operation);
-      } catch (error) {
-        console.error("Failed to persist operation:", error);
+      case "op": {
+        const outbound: WsServerMessage = { type: "op", data: msg.data };
+        // ws.publish excludes the sender — equivalent to socket.to(room).emit()
+        // boardId is taken from the operation payload; a well-behaved client
+        // should only send ops for the board they joined. Enforcing this is
+        // out of scope for this migration.
+        ws.publish(msg.data.boardId, JSON.stringify(outbound));
+        try {
+          await applyOperationToSnapshot(msg.data.boardId, msg.data);
+        } catch (err) {
+          console.error("Failed to persist operation:", err);
+        }
+        break;
       }
-    });
 
-    socket.on(
-      "cursor",
-      (payload: { boardId: string; x: number; y: number }) => {
-        socket.to(payload.boardId).emit("cursor", {
-          ...payload,
-          clientId: socket.id,
-        });
+      case "cursor": {
+        const outbound: WsServerMessage = {
+          type: "cursor",
+          boardId: msg.boardId,
+          clientId: ws.data.clientId,
+          x: msg.x,
+          y: msg.y,
+        };
+        ws.publish(msg.boardId, JSON.stringify(outbound));
+        break;
       }
-    );
-  });
-}
+    }
+  },
+
+  close(ws: ServerWebSocket<WsData>) {
+    console.log("client disconnected", ws.data.clientId);
+    if (ws.data.boardId) ws.unsubscribe(ws.data.boardId);
+  },
+};
