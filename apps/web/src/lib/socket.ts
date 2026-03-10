@@ -72,7 +72,13 @@ export function connect(boardId: string) {
   ws.onclose = () => scheduleReconnect();
 
   ws.onmessage = (e) => {
-    const msg: WsServerMessage = JSON.parse(e.data);
+    let msg: WsServerMessage;
+    try {
+      msg = JSON.parse(e.data);
+    } catch {
+      console.warn("Received malformed WS message, ignoring.");
+      return;
+    }
     if (msg.type === "op") opHandlers.forEach((h) => h(msg.data));
     if (msg.type === "cursor") {
       cursorHandlers.forEach((h) =>
