@@ -3,7 +3,6 @@ import {
   sendCursor,
   onCursor,
   offCursor,
-  getSocketId,
   type CursorData,
 } from "../lib/socket";
 
@@ -45,10 +44,6 @@ export function useCursors(boardId: string) {
   // Handle incoming cursor updates
   useEffect(() => {
     const handler = (data: CursorData) => {
-      const mySocketId = getSocketId();
-      // Ignore our own cursor
-      if (data.clientId === mySocketId) return;
-
       setCursors((prev) => {
         const next = new Map(prev);
         next.set(data.clientId, {

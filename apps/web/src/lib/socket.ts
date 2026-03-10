@@ -1,133 +1,120 @@
-import { io, type Socket } from "socket.io-client";
+import type { WsClientMessage, WsServerMessage } from "@whiteboard/shared/types/ws";
 import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 
-type StatusChangeHandler = (status: ConnectionStatus) => void;
+export type ConnectionStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
+export type CursorData = { clientId: string; x: number; y: number };
+type StatusHandler = (s: ConnectionStatus) => void;
 
-export type ConnectionStatus =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "reconnecting";
-
-let socket: Socket | null = null;
+let ws: WebSocket | null = null;
 let currentBoardId: string | null = null;
-let statusChangeHandlers: StatusChangeHandler[] = [];
+let statusHandlers: StatusHandler[] = [];
+let opHandlers: ((op: WhiteBoardOperation) => void)[] = [];
+let cursorHandlers: ((d: CursorData) => void)[] = [];
 let currentStatus: ConnectionStatus = "disconnected";
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT = 10;
 
-function setStatus(status: ConnectionStatus) {
-  currentStatus = status;
-  statusChangeHandlers.forEach((handler) => handler(status));
+function setStatus(s: ConnectionStatus) {
+  currentStatus = s;
+  statusHandlers.forEach((h) => h(s));
+}
+
+function send(msg: WsClientMessage) {
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+}
+
+function scheduleReconnect() {
+  if (reconnectAttempts >= MAX_RECONNECT) {
+    setStatus("disconnected");
+    return;
+  }
+  setStatus("reconnecting");
+  const delay = Math.min(1000 * 2 ** reconnectAttempts, 5000);
+  reconnectTimer = setTimeout(() => {
+    reconnectAttempts++;
+    if (currentBoardId) connect(currentBoardId);
+  }, delay);
 }
 
 export function getConnectionStatus(): ConnectionStatus {
   return currentStatus;
 }
 
-export function onStatusChange(handler: StatusChangeHandler) {
-  statusChangeHandlers.push(handler);
+export function onStatusChange(h: StatusHandler) {
+  statusHandlers.push(h);
 }
 
-export function offStatusChange(handler: StatusChangeHandler) {
-  statusChangeHandlers = statusChangeHandlers.filter((h) => h !== handler);
+export function offStatusChange(h: StatusHandler) {
+  statusHandlers = statusHandlers.filter((x) => x !== h);
 }
 
 export function connect(boardId: string) {
-  const url = import.meta.env.VITE_WS_URL ?? "http://localhost:4000";
+  // Guard against dangling WebSocket from previous connection attempt
+  if (ws) {
+    ws.onclose = null;
+    ws.close();
+    ws = null;
+  }
   currentBoardId = boardId;
   setStatus("connecting");
+  const base = import.meta.env.VITE_WS_URL ?? "http://localhost:4000";
+  const url = base.replace(/^http/, "ws") + "/ws";
+  ws = new WebSocket(url);
 
-  socket = io(url, {
-    reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-  });
-
-  socket.on("connect", () => {
+  ws.onopen = () => {
+    reconnectAttempts = 0;
     setStatus("connected");
-    socket?.emit("join-board", { boardId: currentBoardId });
-  });
+    send({ type: "join-board", boardId });
+  };
 
-  socket.on("disconnect", () => {
-    setStatus("disconnected");
-  });
+  ws.onclose = () => scheduleReconnect();
 
-  socket.on("reconnect_attempt", () => {
-    setStatus("reconnecting");
-  });
-
-  socket.on("reconnect", () => {
-    setStatus("connected");
-    // Rejoin the board after reconnection
-    if (currentBoardId) {
-      socket?.emit("join-board", { boardId: currentBoardId });
+  ws.onmessage = (e) => {
+    const msg: WsServerMessage = JSON.parse(e.data);
+    if (msg.type === "op") opHandlers.forEach((h) => h(msg.data));
+    if (msg.type === "cursor") {
+      cursorHandlers.forEach((h) =>
+        h({ clientId: msg.clientId, x: msg.x, y: msg.y })
+      );
     }
-  });
-
-  socket.on("reconnect_failed", () => {
-    setStatus("disconnected");
-  });
-}
-
-function isSocketConnected(): boolean {
-  if (!socket?.connected) {
-    console.warn("Socket is not connected.");
-    return false;
-  }
-  return true;
+  };
 }
 
 export function disconnect(boardId: string) {
-  if (!socket) return;
-  socket.emit("leave-board", { boardId });
-  socket.disconnect();
-  socket = null;
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  send({ type: "leave-board", boardId });
+  ws?.close();
+  ws = null;
   currentBoardId = null;
   setStatus("disconnected");
 }
 
-export function sendOperation(operation: WhiteBoardOperation) {
-  socket?.emit("op", operation);
+export function sendOperation(op: WhiteBoardOperation) {
+  send({ type: "op", data: op });
 }
 
-export function onOperation(handler: (operation: WhiteBoardOperation) => void) {
-  socket?.on("op", handler);
+export function onOperation(h: (op: WhiteBoardOperation) => void) {
+  opHandlers.push(h);
 }
 
-export function offOperation(
-  handler: (operation: WhiteBoardOperation) => void
-) {
-  socket?.off("op", handler);
+export function offOperation(h: (op: WhiteBoardOperation) => void) {
+  opHandlers = opHandlers.filter((x) => x !== h);
 }
 
-// Cursor events for real-time cursor display
 export function sendCursor(boardId: string, x: number, y: number) {
-  if (!isSocketConnected()) {
-    console.warn("Cannot send cursor data.");
-  }
-  socket?.emit("cursor", { boardId, x, y });
+  send({ type: "cursor", boardId, x, y });
 }
 
-export type CursorData = {
-  clientId: string;
-  x: number;
-  y: number;
-};
-
-export function onCursor(handler: (data: CursorData) => void) {
-  if (!isSocketConnected()) {
-    console.warn("Cannot listen to cursor data.");
-  }
-  socket?.on("cursor", handler);
+export function onCursor(h: (d: CursorData) => void) {
+  cursorHandlers.push(h);
 }
 
-export function offCursor(handler: (data: CursorData) => void) {
-  if (!isSocketConnected()) {
-    console.warn("Cannot stop listening to cursor data.");
-  }
-  socket?.off("cursor", handler);
+export function offCursor(h: (d: CursorData) => void) {
+  cursorHandlers = cursorHandlers.filter((x) => x !== h);
 }
 
+// clientId is assigned server-side; server pub/sub already excludes the sender
 export function getSocketId(): string | undefined {
-  return socket?.id;
+  return undefined;
 }
