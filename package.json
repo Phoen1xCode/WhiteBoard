@@ -8,9 +8,5 @@
   ],
   "scripts": {
     "dev:web": "bun run --cwd apps/web dev"
-  },
-  "trustedDependencies": [
-    "@swc/core",
-    "esbuild"
-  ]
+  }
 }
