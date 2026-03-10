@@ -22,7 +22,13 @@ const server = Bun.serve<WsData>({
     }
 
     // REST routes
-    return handleRequest(req).then(addCors);
+    return handleRequest(req).then(addCors).catch((err) => {
+      console.error("Unhandled request error:", err);
+      return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
   },
   websocket: wsHandlers,
 });
