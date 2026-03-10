@@ -68,6 +68,7 @@ export function connect(boardId: string) {
     send({ type: "join-board", boardId });
   };
 
+  ws.onerror = () => {}; // swallow; onclose fires immediately after and drives reconnect
   ws.onclose = () => scheduleReconnect();
 
   ws.onmessage = (e) => {
@@ -83,6 +84,7 @@ export function connect(boardId: string) {
 
 export function disconnect(boardId: string) {
   if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectAttempts = 0;
   send({ type: "leave-board", boardId });
   ws?.close();
   ws = null;
