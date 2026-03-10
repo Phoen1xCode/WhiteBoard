@@ -7,9 +7,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:web": "cd apps/web && yarn dev"
+    "dev:web": "bun run --cwd apps/web dev"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  }
+  "trustedDependencies": [
+    "@swc/core",
+    "esbuild"
+  ]
 }
