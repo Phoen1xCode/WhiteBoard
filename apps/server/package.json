@@ -16,10 +16,12 @@
     "prisma:dbpush": "bunx --bun prisma db push"
   },
   "dependencies": {
+    "@elysiajs/cors": "^1.4.1",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@whiteboard/shared": "workspace:*",
     "dotenv": "^17.3.1",
+    "elysia": "^1.4.28",
     "ioredis": "^5.10.1",
     "jose": "^6.2.2",
     "pg": "^8.20.0"
