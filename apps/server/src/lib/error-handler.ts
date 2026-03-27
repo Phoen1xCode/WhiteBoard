@@ -1,16 +1,8 @@
-import type { Elysia } from "elysia";
 import { AuthError } from "../services/auth.service";
 import { BoardError } from "../services/board.service";
 
-export function errorHandler({
-  code,
-  error,
-  set,
-}: {
-  code: string;
-  error: Error;
-  set: { status: number };
-}) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function errorHandler({ code, error, set }: any) {
   if (error instanceof AuthError) {
     set.status = error.status;
     return { error: error.message };
