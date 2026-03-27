@@ -43,6 +43,14 @@ beforeAll(() => {
           jti: "test-jti",
         };
       }
+      if (token === "blacklisted-token") {
+        return {
+          userId: 1,
+          username: "alice",
+          email: "a@b.com",
+          jti: "blacklisted-jti",
+        };
+      }
       throw new Error("Invalid token");
     },
   );
@@ -77,6 +85,15 @@ describe("auth.plugin", () => {
     const res = await app.handle(
       new Request("http://localhost/protected", {
         headers: { Authorization: "Bearer invalid-token" },
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  test("returns 401 when token jti is blacklisted", async () => {
+    const res = await app.handle(
+      new Request("http://localhost/protected", {
+        headers: { Authorization: "Bearer blacklisted-token" },
       }),
     );
     expect(res.status).toBe(401);

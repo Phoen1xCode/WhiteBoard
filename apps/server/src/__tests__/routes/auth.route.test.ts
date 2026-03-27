@@ -59,19 +59,12 @@ mock.module("../../lib/redis", () => ({
 import { Elysia } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { authRoute } from "../../routes/auth.route";
-import { AuthError } from "../../services/auth.service";
+import { errorHandler } from "../../lib/error-handler";
 
 const app = new Elysia()
   .use(authPlugin)
   .use(authRoute)
-  .onError(({ error, set }) => {
-    if (error instanceof AuthError) {
-      set.status = error.status;
-      return { error: error.message };
-    }
-    set.status = 500;
-    return { error: "Internal Server Error" };
-  });
+  .onError(errorHandler);
 
 const BASE = "http://localhost";
 

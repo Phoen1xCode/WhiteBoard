@@ -39,19 +39,12 @@ mock.module("../../services/auth.service", () => ({
 import { Elysia } from "elysia";
 import { authPlugin } from "../../plugins/auth.plugin";
 import { boardRoute } from "../../routes/board.route";
-import { BoardError } from "../../services/board.service";
+import { errorHandler } from "../../lib/error-handler";
 
 const app = new Elysia()
   .use(authPlugin)
   .use(boardRoute)
-  .onError(({ error, set }) => {
-    if (error instanceof BoardError) {
-      set.status = error.status;
-      return { error: error.message };
-    }
-    set.status = 500;
-    return { error: "Internal Server Error" };
-  });
+  .onError(errorHandler);
 
 const AUTH = { Authorization: "Bearer valid-token" };
 const BASE = "http://localhost";
