@@ -1,6 +1,5 @@
 import type { ServerWebSocket } from "bun";
 import type { WsClientMessage, WsServerMessage } from "@whiteboard/shared/types/ws";
-import { applyOperationToSnapshot } from "../services/boardsService";
 
 export type WsData = { clientId: string; boardId: string | null };
 
@@ -30,17 +29,9 @@ export const wsHandlers = {
         break;
 
       case "op": {
+        // TODO: Plan 2 will add event sourcing integration here
         const outbound: WsServerMessage = { type: "op", data: msg.data };
-        // ws.publish excludes the sender — equivalent to socket.to(room).emit()
-        // boardId is taken from the operation payload; a well-behaved client
-        // should only send ops for the board they joined. Enforcing this is
-        // out of scope for this migration.
         ws.publish(msg.data.boardId, JSON.stringify(outbound));
-        try {
-          await applyOperationToSnapshot(msg.data.boardId, msg.data);
-        } catch (err) {
-          console.error("Failed to persist operation:", err);
-        }
         break;
       }
 

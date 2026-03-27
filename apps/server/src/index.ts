@@ -1,15 +1,52 @@
-import { handleRequest } from "./routes/boards";
-import { wsHandlers, type WsData } from "./ws/socket";
+import { config } from "./config";
+import { initRedis, closeRedis } from "./lib/redis";
+import { prisma } from "./lib/prisma";
+import { handleCors, addCorsHeaders } from "./middleware/cors";
+import { handleAuthRoute } from "./handlers/auth.handler";
+import { handleBoardRoute } from "./handlers/board.handler";
+import { startBatchWriter, stopBatchWriter, recoverWal } from "./services/batch-writer";
+import { compactBoard } from "./services/operation.service";
+import { jsonError } from "./lib/response";
+import type { WsData } from "./ws/socket";
+import { wsHandlers } from "./ws/socket";
 
-const PORT = Number(process.env.PORT ?? 3000);
+// --- Initialize subsystems ---
+
+// Redis (all ioredis — standard client + dedicated Pub/Sub subscriber)
+const { redis } = initRedis();
+
+// Crash recovery: drain any leftover WAL entries
+await recoverWal();
+console.log("WAL crash recovery complete");
+
+// Start batch writer (WAL → DB every 100ms)
+startBatchWriter();
+console.log("BatchWriter started");
+
+// Start compaction ticker
+const compactionInterval = setInterval(async () => {
+  try {
+    const activeBoards = await redis.smembers("wal:active-boards");
+    for (const boardId of activeBoards) {
+      await compactBoard(boardId);
+    }
+  } catch (err) {
+    console.error("Compaction error:", err);
+  }
+}, config.COMPACTION_INTERVAL_SECONDS * 1000);
+console.log(`Compaction ticker started (every ${config.COMPACTION_INTERVAL_SECONDS}s)`);
+
+// --- HTTP Server ---
 
 const server = Bun.serve<WsData>({
-  port: PORT,
-  fetch(req, server) {
+  port: config.PORT,
+
+  async fetch(req, server) {
     const url = new URL(req.url);
+    const pathname = url.pathname;
 
     // WebSocket upgrade at /ws
-    if (url.pathname === "/ws") {
+    if (pathname === "/ws") {
       const clientId = crypto.randomUUID();
       const upgraded = server.upgrade(req, { data: { clientId, boardId: null } });
       if (upgraded) return undefined;
@@ -17,34 +54,89 @@ const server = Bun.serve<WsData>({
     }
 
     // CORS preflight
-    if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+    const corsResponse = handleCors(req);
+    if (corsResponse) return corsResponse;
+
+    // Health check
+    if (req.method === "GET" && pathname === "/health") {
+      return addCorsHeaders(
+        new Response(
+          JSON.stringify({
+            status: "ok",
+            uptime: process.uptime(),
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
     }
 
-    // REST routes
-    return handleRequest(req).then(addCors).catch((err) => {
+    // Route dispatching
+    try {
+      // Auth routes (some don't require auth)
+      const authResponse = await handleAuthRoute(req, pathname);
+      if (authResponse) return addCorsHeaders(authResponse);
+
+      // Board routes (all require auth)
+      const boardResponse = await handleBoardRoute(req, pathname);
+      if (boardResponse) return addCorsHeaders(boardResponse);
+
+      return addCorsHeaders(jsonError(404, "Not Found"));
+    } catch (err) {
       console.error("Unhandled request error:", err);
-      return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
-    });
+      return addCorsHeaders(jsonError(500, "Internal Server Error"));
+    }
   },
-  websocket: wsHandlers,
+
+  websocket: {
+    ...wsHandlers,
+    idleTimeout: 120,
+    maxPayloadLength: config.WS_MAX_PAYLOAD_BYTES,
+  },
 });
 
 console.log(`Server running on http://localhost:${server.port}`);
 
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
+// --- Graceful Shutdown ---
+
+const SHUTDOWN_TIMEOUT = 30_000;
+
+async function shutdown(signal: string) {
+  console.log(`Received ${signal}, shutting down gracefully...`);
+
+  const timeout = setTimeout(() => {
+    console.error("Shutdown timed out, forcing exit");
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT);
+
+  try {
+    // Stop accepting new connections
+    server.stop();
+    console.log("Server stopped accepting connections");
+
+    // Flush batch writer
+    await stopBatchWriter();
+    console.log("BatchWriter flushed and stopped");
+
+    // Stop compaction
+    clearInterval(compactionInterval);
+    console.log("Compaction stopped");
+
+    // Close Redis
+    await closeRedis();
+    console.log("Redis connections closed");
+
+    // Disconnect Prisma
+    await prisma.$disconnect();
+    console.log("Prisma disconnected");
+
+    clearTimeout(timeout);
+    process.exit(0);
+  } catch (err) {
+    console.error("Shutdown error:", err);
+    clearTimeout(timeout);
+    process.exit(1);
+  }
 }
 
-function addCors(res: Response): Response {
-  const headers = new Headers(res.headers);
-  for (const [k, v] of Object.entries(corsHeaders())) headers.set(k, v);
-  return new Response(res.body, { status: res.status, headers });
-}
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
