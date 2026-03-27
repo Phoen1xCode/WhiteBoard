@@ -1,17 +1,75 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "library"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  email       String       @unique
+  username    String       @unique
+  password    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  boards      Board[]
+  permissions Permission[]
+  Operations  Operation[]
 }
 
 model Board {
-  id        String   @id @default(cuid())
-  title     String
-  snapshot  Json
+  id          String       @id @default(cuid())
+  title       String
+  ownerId     Int
+  owner       User         @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  operations  Operation[]
+  snapshot    Snapshot[]
+  permissions Permission[]
+}
+
+model Operation {
+  id        Int      @id @default(autoincrement())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  seq       Int
+  opType    String   @db.VarChar(36)
+  elementId String?  @db.VarChar(36)
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@unique([boardId, seq])
+  @@index([boardId, seq])
+}
+
+model Snapshot {
+  id        Int      @id @default(autoincrement())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  seq       Int
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@index([boardId])
+}
+
+model Permission {
+  id        Int      @id @default(autoincrement())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  role      String   @db.VarChar(10) // "owner" | "editor" | "viewer"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
