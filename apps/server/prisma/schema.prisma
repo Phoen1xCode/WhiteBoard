@@ -21,7 +21,7 @@ model User {
   updatedAt   DateTime     @updatedAt
   boards      Board[]
   permissions Permission[]
-  Operations  Operation[]
+  operations  Operation[]
 }
 
 model Board {
@@ -32,7 +32,7 @@ model Board {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   operations  Operation[]
-  snapshot    Snapshot[]
+  snapshots   Snapshot[]
   permissions Permission[]
 }
 
@@ -45,7 +45,7 @@ model Operation {
   seq       Int
   opType    String   @db.VarChar(36)
   elementId String?  @db.VarChar(36)
-  payload   Json
+  payload   Json?
   createdAt DateTime @default(now())
 
   @@unique([boardId, seq])
@@ -72,4 +72,6 @@ model Permission {
   role      String   @db.VarChar(10) // "owner" | "editor" | "viewer"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([boardId, userId])
 }
