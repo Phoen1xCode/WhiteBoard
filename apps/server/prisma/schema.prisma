@@ -1,16 +1,85 @@
 generator client {
-    provider = "prisma-client"
-    output   = "../prisma/generated"
+  provider = "prisma-client"
+  output   = "../prisma/generated"
 }
 
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
+}
+
+enum PermissionRole {
+  OWNER  @map("owner")
+  EDITOR @map("editor")
+  VIEWER @map("viewer")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  username     String       @unique
+  passwordHash String
+  boards       Board[]
+  permissions  Permission[]
+  operations   Operation[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Board {
-    id        String   @id @default(cuid())
-    title     String
-    snapshot  Json // { elements: [...] }
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id          String       @id @default(cuid())
+  title       String
+  snapshot    Json
+  ownerId     String?
+  owner       User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  permissions Permission[]
+  operations  Operation[]
+  snapshots   Snapshot[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([ownerId])
+}
+
+model Permission {
+  id        String         @id @default(cuid())
+  boardId   String
+  userId    String
+  role      PermissionRole
+  board     Board          @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([boardId, userId])
+  @@index([userId])
+}
+
+model Operation {
+  id         String   @id @default(cuid())
+  boardId    String
+  userId     String?
+  seq        Int
+  opType     String
+  elementId  String?
+  clientOpId String?
+  payload    Json
+  board      Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@unique([boardId, seq])
+  @@index([boardId, createdAt])
+  @@index([userId])
+}
+
+model Snapshot {
+  id        String   @id @default(cuid())
+  boardId   String
+  seq       Int
+  state     Json
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([boardId, seq])
+  @@index([boardId, createdAt])
 }
