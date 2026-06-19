@@ -31,3 +31,6 @@ docs/
 
 # Git worktrees
 .worktrees/
+
+.claude/
+.agents/
