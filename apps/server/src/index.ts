@@ -4,7 +4,7 @@ import cors from "@koa/cors";
 import http from "http";
 import { Server } from "socket.io";
 import { createBoardsRouter } from "./routes/boards.ts";
-import { initSocket } from "./ws/socket";
+import { initSocket } from "./sockets/socket";
 
 const app = new Koa();
 const router = createBoardsRouter();
