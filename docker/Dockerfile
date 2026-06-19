@@ -3,11 +3,12 @@
 # ============================================
 # Stage 1: Base image with dependencies
 # ============================================
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 WORKDIR /app
 
-# Install dependencies for Prisma
-RUN apk add --no-cache openssl
+# Install dependencies for Prisma and enable pnpm
+RUN apk add --no-cache openssl \
+  && corepack enable
 
 # ============================================
 # Stage 2: Install dependencies
@@ -15,13 +16,13 @@ RUN apk add --no-cache openssl
 FROM base AS deps
 
 # Copy package files
-COPY package.json yarn.lock ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared/package.json ./packages/shared/
 
 # Install all dependencies
-RUN yarn install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # ============================================
 # Stage 3: Build the web application
@@ -35,7 +36,7 @@ COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 # Copy source files
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
-COPY package.json yarn.lock ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Build arguments for environment variables
 ARG VITE_API_BASE
@@ -45,8 +46,7 @@ ENV VITE_API_BASE=${VITE_API_BASE}
 ENV VITE_WS_URL=${VITE_WS_URL}
 
 # Build the web app
-WORKDIR /app/apps/web
-RUN yarn build
+RUN pnpm --filter @whiteboard/web build
 
 # ============================================
 # Stage 4: Build the server application
@@ -61,11 +61,10 @@ COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
 COPY packages/shared ./packages/shared
 COPY apps/server ./apps/server
 COPY apps/server/prisma ./prisma
-COPY package.json yarn.lock ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Generate Prisma client
-WORKDIR /app/apps/server
-RUN yarn prisma:generate
+RUN pnpm --filter @whiteboard/server prisma:generate
 
 # ============================================
 # Stage 5: Production server image
@@ -79,7 +78,7 @@ COPY --from=server-builder /app/node_modules ./node_modules
 COPY --from=server-builder /app/apps/server ./apps/server
 COPY --from=server-builder /app/packages/shared ./packages/shared
 COPY --from=server-builder /app/apps/server/prisma ./prisma
-COPY package.json ./
+COPY package.json pnpm-workspace.yaml ./
 
 # Copy entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh

@@ -2,9 +2,8 @@
 set -e
 
 echo "Running database migrations..."
-cd /app
-npx prisma migrate deploy --schema=./prisma/schema.prisma
+cd /app/apps/server
+pnpm exec prisma migrate deploy
 
 echo "Starting server..."
-cd /app/apps/server
-exec yarn start
+exec pnpm start
