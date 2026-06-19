@@ -2,14 +2,19 @@
   "name": "whiteboard",
   "private": true,
   "version": "0.0.1",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=20.19"
+  },
   "scripts": {
-    "dev:web": "cd apps/web && yarn dev"
+    "dev:web": "pnpm --filter @whiteboard/web dev",
+    "dev:server": "pnpm --filter @whiteboard/server dev",
+    "build:web": "pnpm --filter @whiteboard/web build",
+    "lint": "pnpm -r lint",
+    "prisma:generate": "pnpm --filter @whiteboard/server prisma:generate",
+    "prisma:migrate": "pnpm --filter @whiteboard/server prisma:migrate"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^10.0.3"
   }
 }
