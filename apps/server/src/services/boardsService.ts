@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import * as boardRepository from "../repositories/board-repository";
 import type {
   WhiteBoardSnapshot,
   WhiteBoardOperation,
@@ -7,11 +7,9 @@ import type {
 
 // 创建新的白板
 export async function createBoard(title: string): Promise<WhiteBoardSnapshot> {
-  const result = await prisma.board.create({
-    data: {
-      title,
-      snapshot: { elements: [] },
-    },
+  const result = await boardRepository.createBoard({
+    title,
+    snapshot: { elements: [] },
   });
 
   return {
@@ -23,9 +21,7 @@ export async function createBoard(title: string): Promise<WhiteBoardSnapshot> {
 }
 
 export async function getBoard(id: string): Promise<WhiteBoardSnapshot | null> {
-  const result = await prisma.board.findUnique({
-    where: { id },
-  });
+  const result = await boardRepository.findBoardById(id);
 
   if (!result) {
     return null;
@@ -40,22 +36,15 @@ export async function getBoard(id: string): Promise<WhiteBoardSnapshot | null> {
 }
 
 export async function updateBoard(id: string, snapshot: any) {
-  return await prisma.board.update({
-    where: { id },
-    data: { snapshot },
-  });
+  return await boardRepository.updateBoardSnapshot(id, snapshot);
 }
 
 export async function deleteBoard(id: string) {
-  return await prisma.board.delete({
-    where: { id },
-  });
+  return await boardRepository.deleteBoardById(id);
 }
 
 export async function listBoards() {
-  return await prisma.board.findMany({
-    orderBy: { updatedAt: "desc" },
-  });
+  return await boardRepository.listBoards();
 }
 
 // 应用操作到数据库中的 snapshot
@@ -63,9 +52,7 @@ export async function applyOperationToSnapshot(
   boardId: string,
   operation: WhiteBoardOperation
 ): Promise<void> {
-  const board = await prisma.board.findUnique({
-    where: { id: boardId },
-  });
+  const board = await boardRepository.findBoardById(boardId);
 
   if (!board) {
     throw new Error(`Board ${boardId} not found`);
@@ -109,10 +96,7 @@ export async function applyOperationToSnapshot(
 
   // 转换回数组并保存
   const updatedElements = Object.values(elementsMap);
-  await prisma.board.update({
-    where: { id: boardId },
-    data: {
-      snapshot: { elements: updatedElements } as any,
-    },
-  });
+  await boardRepository.updateBoardSnapshot(boardId, {
+    elements: updatedElements,
+  } as any);
 }
