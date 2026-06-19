@@ -2,8 +2,6 @@
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
@@ -26,8 +24,15 @@ dist-ssr
 # Environment variables
 .env
 
-excalidraw/
-docs/
-
 # Git worktrees
 .worktrees/
+
+# LLM
+.agents
+.claude
+
+# Database ORM
+apps/server/prisma/generated
+
+# Documentation
+docs/
