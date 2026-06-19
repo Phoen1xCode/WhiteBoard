@@ -28,13 +28,13 @@
 
 ### 工程/运维
 
-- 包管理器：yarn
+- 包管理器：pnpm
 - 代码质量：ESLint + Prettier
 - 部署：Docker 部署
 
 ## 功能列表
 
-- [x] 基础架构搭建（Monorepo + Yarn Workspaces）
+- [x] 基础架构搭建（Monorepo + pnpm workspace）
 - [x] 自由线条、矩形、圆形、直线绘制工具
 - [x] 实时操作同步（Socket.IO）
 - [x] 白板数据持久化（PostgreSQL）
@@ -57,8 +57,8 @@
 
 ### 前置要求
 
-- Node.js >= 18
-- Yarn >= 1.22
+- Node.js >= 20.19
+- pnpm >= 11
 - PostgreSQL >= 14
 
 ### 安装步骤
@@ -73,7 +73,7 @@ cd WhiteBoard
 2. **安装依赖**
 
 ```bash
-yarn install
+pnpm install
 ```
 
 3. **配置数据库**
@@ -88,10 +88,8 @@ DATABASE_URL="postgresql://user:password@localhost:5432/whiteboard"
 4. **运行数据库迁移**
 
 ```bash
-cd apps/server
-yarn prisma:generate
-yarn prisma:migrate
-cd ../..
+pnpm prisma:generate
+pnpm prisma:migrate
 ```
 
 5. **启动开发服务器**
@@ -100,12 +98,10 @@ cd ../..
 
 ```bash
 # 终端 1: 启动后端 (默认端口 3000)
-cd apps/server
-yarn dev
+pnpm dev:server
 
 # 终端 2: 启动前端 (默认端口 5173)
-cd apps/web
-yarn dev
+pnpm dev:web
 ```
 
 6. **访问应用**
@@ -162,7 +158,7 @@ WhiteBoard/
 
 ### 整体架构
 
-WhiteBoard 采用前后端分离的 Monorepo 架构，通过 Yarn Workspaces 统一管理依赖。整体架构分为三层：
+WhiteBoard 采用前后端分离的 Monorepo 架构，通过 pnpm workspace 统一管理依赖。整体架构分为三层：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -465,18 +461,17 @@ model Board {
 
 ```bash
 # 安装依赖
-yarn install
+pnpm install
 
 # 前端开发
-cd apps/web && yarn dev
+pnpm dev:web
 
 # 后端开发
-cd apps/server && yarn dev
+pnpm dev:server
 
 # Prisma 相关
-cd apps/server
-yarn prisma:generate   # 生成 Prisma Client
-yarn prisma:migrate    # 运行数据库迁移
+pnpm prisma:generate   # 生成 Prisma Client
+pnpm prisma:migrate    # 运行数据库迁移
 ```
 
 ## Docker 部署
