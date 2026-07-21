@@ -8,7 +8,7 @@ import type {
   WhiteBoardOperation,
   ShapeType,
 } from "@whiteboard/shared/types";
-import { sendOperation, SocketCommitError } from "../lib/socket";
+import { isBoardReady, sendOperation, SocketCommitError } from "../lib/socket";
 
 // 绘制样式配置
 type DrawingStyle = {
@@ -207,6 +207,9 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
    */
   applyOperation: (operation, options) => {
     const local = options?.local ?? false; // 判断是否为本地操作
+    if (local && !isBoardReady()) {
+      return;
+    }
     const recordHistory = options?.recordHistory ?? local; // 本地操作则记录历史，远程操作不记录
 
     // 在应用变更前创建逆向操作
@@ -311,6 +314,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
    * @param boardId 白板ID，确保操作在正确的白板上下文中执行
    */
   undo: (boardId) => {
+    if (!isBoardReady()) return;
     const { undoStack } = get();
     if (undoStack.length === 0) return; // 无操作可撤销
 
@@ -339,6 +343,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
    * @param boardId 白板ID，确保操作在正确的白板上下文中执行
    */
   redo: (boardId) => {
+    if (!isBoardReady()) return;
     const { redoStack } = get();
     if (redoStack.length === 0) return; // 无操作可重做
 
