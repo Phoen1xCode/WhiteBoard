@@ -133,6 +133,10 @@ export function failBoardReady(reason: string): void {
   waiters.forEach((waiter) => waiter.reject(error));
 }
 
+export function isBoardReady(): boolean {
+  return isBoardJoined;
+}
+
 export function getConnectionStatus(): ConnectionStatus {
   return currentStatus;
 }
@@ -157,22 +161,56 @@ export function offStatusChange(handler: StatusChangeHandler) {
   statusChangeHandlers = statusChangeHandlers.filter((h) => h !== handler);
 }
 
+async function ensureJoined(boardId: string): Promise<void> {
+  if (isBoardJoined && socket?.connected) {
+    return;
+  }
+  if (!socket?.connected) {
+    throw new SocketCommitError("Socket is not connected", "NOT_CONNECTED", false);
+  }
+
+  boardReadyError = null;
+  markBoardLeft();
+  setStatus("reconnecting");
+  await joinBoard(boardId);
+  await requestReplay(boardId, lastConfirmedSeq);
+  markBoardJoined();
+  setStatus("connected");
+}
+
 function wireSocketEvents(next: Socket) {
   next.on("connect", async () => {
-    setStatus("connected");
     if (!currentBoardId) {
+      setStatus("connected");
       markBoardJoined();
       return;
     }
 
-    try {
-      await joinBoard(currentBoardId);
-      await requestReplay(currentBoardId, lastConfirmedSeq);
-      markBoardJoined();
-    } catch (error) {
-      failBoardReady(error instanceof Error ? error.message : "Failed to join board");
-      console.error("Failed to join board after connect:", error);
+    const maxAttempts = 3;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        boardReadyError = null;
+        markBoardLeft();
+        setStatus(attempt === 1 ? "connecting" : "reconnecting");
+        await joinBoard(currentBoardId);
+        await requestReplay(currentBoardId, lastConfirmedSeq);
+        markBoardJoined();
+        setStatus("connected");
+        return;
+      } catch (error) {
+        lastError = error;
+        console.error(`Failed to join board (attempt ${attempt}):`, error);
+        if (attempt < maxAttempts) {
+          await sleep(400 * attempt);
+        }
+      }
     }
+
+    failBoardReady(
+      lastError instanceof Error ? lastError.message : "Failed to join board"
+    );
+    setStatus("disconnected");
   });
 
   next.on("disconnect", () => {
@@ -391,6 +429,8 @@ export async function sendOperation(
 
   const run = async (): Promise<OperationAckPayload> => {
     let rateLimitAttempts = 0;
+    let recommitAttempts = 0;
+    const maxRecommitAttempts = 3;
 
     for (;;) {
       try {
@@ -417,7 +457,27 @@ export async function sendOperation(
             return recovered;
           }
         } catch {
-          // Keep optimistic state on non-definitive miss.
+          // Fall through to limited recommit.
+        }
+
+        if (recommitAttempts < maxRecommitAttempts) {
+          recommitAttempts += 1;
+          try {
+            if (
+              error instanceof SocketCommitError &&
+              (error.code === "BOARD_NOT_READY" ||
+                error.code === "NOT_JOINED" ||
+                error.code === "JOIN_TIMEOUT")
+            ) {
+              await ensureJoined(boardId);
+            } else if (socket?.connected && !isBoardJoined) {
+              await ensureJoined(boardId);
+            }
+          } catch {
+            // Retry commitOnce anyway after backoff.
+          }
+          await sleep(300 * recommitAttempts);
+          continue;
         }
 
         throw error instanceof Error
