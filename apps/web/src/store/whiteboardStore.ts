@@ -2,12 +2,19 @@
 
 import { create } from "zustand";
 import { produce } from "immer";
+import { nanoid } from "nanoid";
 import type {
   WhiteBoardElement,
   WhiteBoardOperation,
   ShapeType,
 } from "@whiteboard/shared/types";
 import { sendOperation } from "../lib/socket";
+
+function commitLocal(operation: WhiteBoardOperation): void {
+  void sendOperation(operation, nanoid()).catch((error) => {
+    console.error("Failed to commit operation:", error);
+  });
+}
 
 // 绘制样式配置
 type DrawingStyle = {
@@ -198,9 +205,9 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
       })
     );
 
-    // 本地操作需要发送到其他客户端
+    // 本地操作提交到服务端（ack 后再由其他客户端收到 committed）
     if (local) {
-      sendOperation(operation);
+      commitLocal(operation);
     }
   },
 
@@ -294,7 +301,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
 
     // 确保逆向操作使用正确的 boardId 并发送到其他客户端同步
     const syncedInverse = { ...entry.inverse, boardId };
-    sendOperation(syncedInverse);
+    commitLocal(syncedInverse);
   },
 
   /**
@@ -337,7 +344,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
 
     // 确保原始操作使用正确的 boardId 并发送到其他客户端同步
     const syncedOperation = { ...entry.operation, boardId };
-    sendOperation(syncedOperation);
+    commitLocal(syncedOperation);
   },
 
   /**

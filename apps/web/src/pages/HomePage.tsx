@@ -4,8 +4,10 @@ import {
   createBoard,
   listBoards,
   deleteBoard,
+  logout,
   type BoardListItem,
 } from "../lib/api";
+import { getStoredUser } from "../lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +18,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Trash2, ExternalLink, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 export function HomePage() {
   const navigate = useNavigate();
+  const user = getStoredUser();
   const [title, setTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [boards, setBoards] = useState<BoardListItem[]>([]);
@@ -84,10 +87,29 @@ export function HomePage() {
 
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-gray-900">
-            WhiteBoard 协作白板
-          </h1>
+        <div className="flex items-start justify-between gap-4">
+          <div className="text-left space-y-2">
+            <h1 className="text-4xl font-bold text-gray-900">
+              WhiteBoard 协作白板
+            </h1>
+            {user && (
+              <p className="text-sm text-gray-600">已登录：{user.username}</p>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                await logout();
+              } catch {
+                // session cleared client-side anyway
+              }
+              navigate("/login");
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            退出
+          </Button>
         </div>
 
         {/* Create New Board */}
