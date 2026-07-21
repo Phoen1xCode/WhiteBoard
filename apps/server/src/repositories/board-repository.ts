@@ -51,6 +51,52 @@ export async function findBoardById(id: string): Promise<Board | null> {
   });
 }
 
+/** Read snapshot + max(seq) under one row lock so lastSeq always matches snapshot. */
+export async function findBoardSnapshotWithSeq(
+  boardId: string
+): Promise<{ board: Board; lastSeq: number } | null> {
+  return await prisma.$transaction(async (tx) => {
+    const locked = await tx.$queryRaw<
+      Array<{
+        id: string;
+        title: string;
+        snapshot: unknown;
+        ownerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+      }>
+    >`
+      SELECT id, title, snapshot, "ownerId", "createdAt", "updatedAt"
+      FROM "Board"
+      WHERE id = ${boardId}
+      FOR SHARE
+    `;
+
+    const row = locked[0];
+    if (!row) {
+      return null;
+    }
+
+    const latest = await tx.operation.findFirst({
+      where: { boardId },
+      orderBy: { seq: "desc" },
+      select: { seq: true },
+    });
+
+    return {
+      board: {
+        id: row.id,
+        title: row.title,
+        snapshot: row.snapshot as Board["snapshot"],
+        ownerId: row.ownerId,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      lastSeq: latest?.seq ?? 0,
+    };
+  });
+}
+
 export async function listBoards(): Promise<Board[]> {
   return await prisma.board.findMany({
     orderBy: { updatedAt: "desc" },

@@ -65,6 +65,11 @@ vi.mock("../repositories/user-repository", () => ({
 
 vi.mock("../repositories/board-repository", () => ({
   findBoardById: async (id: string) => boards.get(id) ?? null,
+  findBoardSnapshotWithSeq: async (id: string) => {
+    const board = boards.get(id);
+    if (!board) return null;
+    return { board, lastSeq: seq || 0 };
+  },
   updateBoardSnapshot: async (id: string, snapshot: unknown) => {
     const board = boards.get(id);
     board.snapshot = snapshot;
@@ -83,7 +88,7 @@ vi.mock("../repositories/operation-repository", () => ({
       const existing = operations.find(
         (o) => o.boardId === input.boardId && o.clientOpId === input.clientOpId
       );
-      if (existing) return existing;
+      if (existing) return { operation: existing, created: false };
     }
 
     seq += 1;
@@ -104,7 +109,7 @@ vi.mock("../repositories/operation-repository", () => ({
       createdAt: new Date(),
     };
     operations.push(record);
-    return record;
+    return { operation: record, created: true };
   },
   findOperationByClientOpId: async (boardId: string, clientOpId: string) =>
     operations.find((o) => o.boardId === boardId && o.clientOpId === clientOpId) ??
@@ -253,6 +258,40 @@ describe("socket protocol", () => {
     expect(replay.ok).toBe(true);
     expect(replay.operations).toHaveLength(1);
     expect(replay.operations[0].seq).toBe(1);
+
+    let duplicateBroadcast = false;
+    viewer.on("operation:committed", () => {
+      duplicateBroadcast = true;
+    });
+
+    const idempotentAck = await new Promise<any>((resolve) => {
+      editor.emit(
+        "operation:commit",
+        {
+          boardId: "board-1",
+          clientOpId: "c1",
+          operation: {
+            type: "add",
+            boardId: "board-1",
+            element: {
+              id: "e1",
+              type: "rectangle",
+              x: 1,
+              y: 2,
+              width: 3,
+              height: 4,
+              strokeColor: "#000",
+              strokeWidth: 1,
+            },
+          },
+        },
+        resolve
+      );
+    });
+    expect(idempotentAck.ok).toBe(true);
+    expect(idempotentAck.seq).toBe(1);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(duplicateBroadcast).toBe(false);
 
     editor.close();
     viewer.close();

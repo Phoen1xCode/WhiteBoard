@@ -2,7 +2,6 @@ import { PermissionRole, type Board, type Permission } from "../../prisma/genera
 import type { WhiteBoardSnapshot, WhiteBoardElement } from "@whiteboard/shared/types";
 import { AppError } from "../lib/app-error";
 import * as boardRepository from "../repositories/board-repository";
-import { findLatestOperationSeq } from "../repositories/operation-repository";
 import { findPermission } from "../repositories/permission-repository";
 
 interface SnapshotValue {
@@ -27,8 +26,13 @@ export interface BoardSnapshotWithSeq extends WhiteBoardSnapshot {
   lastSeq: number;
 }
 
-async function toWhiteBoardSnapshot(board: Board): Promise<BoardSnapshotWithSeq> {
-  const lastSeq = (await findLatestOperationSeq(board.id)) ?? 0;
+async function toWhiteBoardSnapshot(boardId: string): Promise<BoardSnapshotWithSeq> {
+  const result = await boardRepository.findBoardSnapshotWithSeq(boardId);
+  if (!result) {
+    throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
+  }
+
+  const { board, lastSeq } = result;
   return {
     id: board.id,
     title: board.title,
@@ -96,15 +100,15 @@ export async function createBoard(
     ownerId: userId,
   });
 
-  return toWhiteBoardSnapshot(result);
+  return toWhiteBoardSnapshot(result.id);
 }
 
 export async function getBoard(
   id: string,
   userId: string
 ): Promise<BoardSnapshotWithSeq> {
-  const board = await assertCanAccessBoard(id, userId);
-  return toWhiteBoardSnapshot(board);
+  await assertCanAccessBoard(id, userId);
+  return toWhiteBoardSnapshot(id);
 }
 
 export async function updateBoardTitle(
@@ -113,8 +117,8 @@ export async function updateBoardTitle(
   userId: string
 ): Promise<BoardSnapshotWithSeq> {
   await assertCanEditBoard(id, userId);
-  const board = await boardRepository.updateBoardTitle(id, title);
-  return toWhiteBoardSnapshot(board);
+  await boardRepository.updateBoardTitle(id, title);
+  return toWhiteBoardSnapshot(id);
 }
 
 export async function deleteBoard(id: string, userId: string): Promise<Board> {

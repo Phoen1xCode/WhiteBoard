@@ -67,13 +67,18 @@ export async function findOperationByClientOpId(
   });
 }
 
+export interface CommitOperationAtomicResult {
+  operation: Operation;
+  created: boolean;
+}
+
 /**
  * Lock board row, allocate seq, insert op, update snapshot in one transaction.
  * clientOpId conflicts (P2002) resolve by returning the existing row.
  */
 export async function commitOperationAtomic(
   input: CommitOperationAtomicInput
-): Promise<Operation> {
+): Promise<CommitOperationAtomicResult> {
   try {
     return await prisma.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<Array<{ id: string; snapshot: unknown }>>`
@@ -90,7 +95,7 @@ export async function commitOperationAtomic(
           where: { boardId: input.boardId, clientOpId: input.clientOpId },
         });
         if (existing) {
-          return existing;
+          return { operation: existing, created: false };
         }
       }
 
@@ -118,13 +123,13 @@ export async function commitOperationAtomic(
         data: { snapshot: input.buildNextSnapshot(board.snapshot) },
       });
 
-      return operation;
+      return { operation, created: true };
     });
   } catch (error) {
     if (input.clientOpId && isUniqueConstraintError(error)) {
       const existing = await findOperationByClientOpId(input.boardId, input.clientOpId);
       if (existing) {
-        return existing;
+        return { operation: existing, created: false };
       }
     }
     throw error;

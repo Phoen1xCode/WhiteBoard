@@ -33,6 +33,7 @@ export interface CommittedOperation {
   clientOpId: string | null;
   payload: WhiteBoardOperation;
   createdAt: string;
+  created: boolean;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -90,7 +91,7 @@ function getSnapshotElements(snapshot: unknown): WhiteBoardElement[] {
   return snapshot.elements.filter(isWhiteBoardElement);
 }
 
-function operationToRecord(operation: Operation): CommittedOperation {
+function operationToRecord(operation: Operation, created = true): CommittedOperation {
   return {
     id: operation.id,
     boardId: operation.boardId,
@@ -101,6 +102,7 @@ function operationToRecord(operation: Operation): CommittedOperation {
     clientOpId: operation.clientOpId,
     payload: validateOperationPayload(operation.payload, operation.boardId),
     createdAt: operation.createdAt.toISOString(),
+    created,
   };
 }
 
@@ -206,7 +208,7 @@ export async function commitOperation(
   const operation = validateOperationPayload(input.operation, input.boardId);
   await assertCanEditBoard(input.boardId, input.userId);
 
-  const record = await commitOperationAtomic({
+  const result = await commitOperationAtomic({
     boardId: input.boardId,
     userId: input.userId,
     opType: operation.type,
@@ -222,7 +224,7 @@ export async function commitOperation(
     },
   });
 
-  return operationToRecord(record);
+  return operationToRecord(result.operation, result.created);
 }
 
 export async function getOperationsAfter(
@@ -232,7 +234,7 @@ export async function getOperationsAfter(
 ): Promise<CommittedOperation[]> {
   await assertCanAccessBoard(boardId, userId);
   const operations = await findOperationsAfter(boardId, fromSeq);
-  return operations.map(operationToRecord);
+  return operations.map((operation) => operationToRecord(operation));
 }
 
 export async function replayBoard(
