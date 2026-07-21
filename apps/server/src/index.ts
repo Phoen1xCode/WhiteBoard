@@ -4,13 +4,19 @@ import cors from "@koa/cors";
 import http from "http";
 import { Server } from "socket.io";
 import { createBoardsRouter } from "./routes/boards.ts";
+import { createAuthRouter } from "./routes/auth";
+import { errorMiddleware } from "./middleware/error";
 import { initSocket } from "./sockets/socket";
 
 const app = new Koa();
+const authRouter = createAuthRouter();
 const router = createBoardsRouter();
 
+app.use(errorMiddleware);
 app.use(cors());
 app.use(bodyParser());
+app.use(authRouter.routes());
+app.use(authRouter.allowedMethods());
 app.use(router.routes());
 app.use(router.allowedMethods());
 
