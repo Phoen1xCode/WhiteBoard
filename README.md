@@ -4,109 +4,123 @@
 
 ## 项目特点
 
+- 账号认证（JWT access/refresh + Redis 黑名单）
+- 白板权限：owner / editor / viewer
 - 多种绘图工具：自由线条、矩形、圆形、直线等
-- 实时协作：多人同时编辑，实时同步
-- 一键分享：生成分享链接，支持多人查看
-- Monorepo 架构：前后端代码统一管理
+- 实时协作：Socket.IO operation commit/ack/replay
+- 有序 operation log（boardId + seq）
+- Monorepo：pnpm workspace
 
 ## 技术栈
 
+当前运行时与框架（不是 Bun / Elysia）：
+
 ### 前端
 
-- 框架：React + TypeScript + Vite
-- 绘图引擎：Konva.js + react-konva
-- 状态管理：Zustand + Immer
-- 校验协议：zod
-- 快捷键与手势：react-hotkeys-hook + Pointer Events
-- UI: Tailwind CSS + Lucide Icon
+- React + TypeScript + Vite
+- Konva.js + react-konva
+- Zustand + Immer
+- socket.io-client
+- Zod、Tailwind CSS、Lucide
 
 ### 后端
 
-- 框架：Node.js + Koa
-- 实时协作：Socket.IO
-- 数据库：PostgreSQL + Prisma
+- Node.js + Koa + @koa/router
+- Socket.IO
+- PostgreSQL + Prisma
+- Redis（限流、JWT 黑名单；本地测试可用 `REDIS_URL=memory://`）
+- JWT（jsonwebtoken）
 
 ### 工程/运维
 
-- 包管理器：pnpm
-- 代码质量：ESLint + Prettier
-- 部署：Docker 部署
+- pnpm workspace
+- Docker Compose（web / server / postgres / redis）
+
+更完整的目标架构与重构计划见：
+
+- `docs/architecture-node-pnpm-koa-socketio.md`
+- `docs/refactor-from-fcca376-plan.md`
 
 ## 功能列表
 
-- [x] 基础架构搭建（Monorepo + pnpm workspace）
-- [x] 自由线条、矩形、圆形、直线绘制工具
-- [x] 实时操作同步（Socket.IO）
-- [x] 白板数据持久化（PostgreSQL）
-- [x] 基础 REST API（创建/获取白板）
-- [x] 颜色选择器、线条粗细调整
-- [x] 实线/虚线样式切换
-- [x] 元素选中、编辑、删除
-- [x] 属性面板（PropertyPanel）
-- [x] 元素拖动和变换
-- [x] 键盘快捷键支持（工具切换、删除、Undo/Redo）
-- [x] Undo/Redo 功能
-- [x] 用户光标实时显示
-- [x] 橡皮擦工具
-- [x] 分享链接复制功能
-- [x] 连接状态显示
-- [x] 首页白板列表管理
-- [x] Docker 部署配置
+- [x] pnpm monorepo + shared 类型/schema
+- [x] 注册 / 登录 / 刷新 / 登出 / me
+- [x] 认证后的白板 CRUD + 权限
+- [x] OperationService（原子 seq、replayOps、fromSeq）
+- [x] Socket.IO：`board:join` / `operation:commit` / `operation:replay` / `cursor:update`
+- [x] 前端登录页、Bearer API、socket auth.token、断线 replay
+- [x] 基础绘图工具与 Konva UI
+- [ ] BatchWriter / snapshot compaction（后续）
+- [ ] 多实例 Socket.IO Redis adapter（后续）
 
 ## 快速开始
 
 ### 前置要求
 
-- Node.js >= 20.19
+- Node.js >= 20.19（建议 20/22/24 LTS）
 - pnpm >= 11
 - PostgreSQL >= 14
+- Redis（生产/完整本地联调）；单测可用内存 Redis
 
 ### 安装步骤
 
-1. **克隆仓库**
+1. **克隆仓库并安装依赖**
 
 ```bash
 git clone https://github.com/Phoen1xCode/WhiteBoard.git
 cd WhiteBoard
-```
-
-2. **安装依赖**
-
-```bash
 pnpm install
 ```
 
-3. **配置数据库**
-
-创建 PostgreSQL 数据库，然后配置环境变量：
+2. **配置服务端环境变量**
 
 ```bash
-# 在项目根目录创建 .env 文件
-DATABASE_URL="postgresql://user:password@localhost:5432/whiteboard"
+cp apps/server/.env.example apps/server/.env
+# 编辑 DATABASE_URL / REDIS_URL / JWT_* 密钥
 ```
 
-4. **运行数据库迁移**
+关键变量：
+
+```bash
+DATABASE_URL=postgresql://whiteboard:whiteboardpassword@localhost:5432/whiteboard
+PORT=4000
+REDIS_URL=redis://localhost:6379
+JWT_ACCESS_SECRET=replace-with-a-long-random-access-secret
+JWT_REFRESH_SECRET=replace-with-a-long-random-refresh-secret
+```
+
+前端默认请求 `http://localhost:4000`（可用 `VITE_API_BASE` / `VITE_WS_URL` 覆盖）。
+
+3. **数据库迁移**
 
 ```bash
 pnpm prisma:generate
 pnpm prisma:migrate
 ```
 
-5. **启动开发服务器**
-
-打开两个终端：
+4. **启动**
 
 ```bash
-# 终端 1: 启动后端 (默认端口 3000)
+# 终端 1: 后端默认 http://localhost:4000
 pnpm dev:server
 
-# 终端 2: 启动前端 (默认端口 5173)
+# 终端 2: 前端默认 http://localhost:5173
 pnpm dev:web
 ```
 
-6. **访问应用**
+5. **使用**
 
-打开浏览器访问：http://localhost:5173
+打开 http://localhost:5173 ，先注册/登录，再创建白板。未登录访问受保护路由会跳转登录页；未带 token 的 HTTP board API 返回 401，Socket 无 token 无法连接。
+
+### 测试
+
+```bash
+pnpm test
+# 或
+pnpm --filter @whiteboard/server test
+```
+
+集成测试默认使用内存 Redis（`REDIS_URL=memory://`），不强制本机 PostgreSQL。完整双客户端 E2E 需要本机 Postgres + Redis。
 
 ## 项目结构
 
