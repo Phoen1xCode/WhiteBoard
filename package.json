@@ -10,6 +10,8 @@
     "dev:web": "pnpm --filter @whiteboard/web dev",
     "dev:server": "pnpm --filter @whiteboard/server dev",
     "build:web": "pnpm --filter @whiteboard/web build",
+    "typecheck": "pnpm --filter @whiteboard/shared type-check && pnpm --filter @whiteboard/server typecheck && pnpm --filter @whiteboard/web exec tsc -b --pretty false",
+    "test": "pnpm --filter @whiteboard/server test",
     "lint": "pnpm -r lint",
     "prisma:generate": "pnpm --filter @whiteboard/server prisma:generate",
     "prisma:migrate": "pnpm --filter @whiteboard/server prisma:migrate"
