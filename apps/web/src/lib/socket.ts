@@ -46,6 +46,13 @@ export class SocketCommitError extends Error {
 }
 
 const JOIN_TIMEOUT_MS = 15_000;
+const DEFINITIVE_ERROR_CODES = new Set([
+  "FORBIDDEN",
+  "VALIDATION_ERROR",
+  "INVALID_OPERATION",
+  "UNAUTHORIZED",
+  "BOARD_NOT_FOUND",
+]);
 
 let socket: Socket | null = null;
 let currentBoardId: string | null = null;
@@ -56,9 +63,18 @@ let cursorHandlers: CursorHandler[] = [];
 let ackHandlers: AckHandler[] = [];
 let currentStatus: ConnectionStatus = "disconnected";
 let isBoardJoined = false;
+let boardReadyError: Error | null = null;
 let readyWaiters: ReadyWaiter[] = [];
 let authRefreshInFlight: Promise<string | null> | null = null;
 const outboundByBoard = new Map<string, Promise<unknown>>();
+
+function isDefinitiveErrorCode(code: string): boolean {
+  return DEFINITIVE_ERROR_CODES.has(code);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function setStatus(status: ConnectionStatus) {
   currentStatus = status;
@@ -72,6 +88,9 @@ function getUrl(): string {
 function waitUntilBoardJoined(): Promise<void> {
   if (isBoardJoined) {
     return Promise.resolve();
+  }
+  if (boardReadyError) {
+    return Promise.reject(boardReadyError);
   }
 
   return new Promise<void>((resolve, reject) => {
@@ -95,6 +114,7 @@ function waitUntilBoardJoined(): Promise<void> {
 
 function markBoardJoined(): void {
   isBoardJoined = true;
+  boardReadyError = null;
   const waiters = readyWaiters;
   readyWaiters = [];
   waiters.forEach((waiter) => waiter.resolve());
@@ -107,6 +127,7 @@ function markBoardLeft(): void {
 export function failBoardReady(reason: string): void {
   isBoardJoined = false;
   const error = new SocketCommitError(reason, "BOARD_NOT_READY", false);
+  boardReadyError = error;
   const waiters = readyWaiters;
   readyWaiters = [];
   waiters.forEach((waiter) => waiter.reject(error));
@@ -222,6 +243,7 @@ export function connect(boardId: string) {
   }
 
   currentBoardId = boardId;
+  boardReadyError = null;
   markBoardLeft();
   setStatus("connecting");
 
@@ -338,7 +360,11 @@ async function commitOnce(
   });
 
   if (!result.ok) {
-    throw new SocketCommitError(result.error.message, result.error.code, true);
+    throw new SocketCommitError(
+      result.error.message,
+      result.error.code,
+      isDefinitiveErrorCode(result.error.code)
+    );
   }
 
   setLastConfirmedSeq(result.seq);
@@ -364,26 +390,40 @@ export async function sendOperation(
   const boardId = operation.boardId;
 
   const run = async (): Promise<OperationAckPayload> => {
-    try {
-      return await commitOnce(operation, clientOpId);
-    } catch (error) {
-      if (error instanceof SocketCommitError && error.definitive) {
-        throw error;
-      }
+    let rateLimitAttempts = 0;
 
+    for (;;) {
       try {
-        const recovered = await reconcileClientOp(boardId, clientOpId);
-        if (recovered) {
-          ackHandlers.forEach((handler) => handler(recovered));
-          return recovered;
+        return await commitOnce(operation, clientOpId);
+      } catch (error) {
+        if (error instanceof SocketCommitError && error.definitive) {
+          throw error;
         }
-      } catch {
-        // Fall through to original failure.
-      }
 
-      throw error instanceof Error
-        ? error
-        : new SocketCommitError("Failed to commit operation", "COMMIT_FAILED", false);
+        if (
+          error instanceof SocketCommitError &&
+          (error.code === "RATE_LIMITED" || error.code === "RATE_LIMIT_UNAVAILABLE") &&
+          rateLimitAttempts < 5
+        ) {
+          rateLimitAttempts += 1;
+          await sleep(200 * rateLimitAttempts);
+          continue;
+        }
+
+        try {
+          const recovered = await reconcileClientOp(boardId, clientOpId);
+          if (recovered) {
+            ackHandlers.forEach((handler) => handler(recovered));
+            return recovered;
+          }
+        } catch {
+          // Keep optimistic state on non-definitive miss.
+        }
+
+        throw error instanceof Error
+          ? error
+          : new SocketCommitError("Failed to commit operation", "COMMIT_FAILED", false);
+      }
     }
   };
 
