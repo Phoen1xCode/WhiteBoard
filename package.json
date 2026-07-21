@@ -12,11 +12,16 @@
     "build:web": "pnpm --filter @whiteboard/web build",
     "typecheck": "pnpm --filter @whiteboard/shared type-check && pnpm --filter @whiteboard/server typecheck && pnpm --filter @whiteboard/web exec tsc -b --pretty false",
     "test": "pnpm --filter @whiteboard/server test",
-    "lint": "pnpm -r lint",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "prisma:generate": "pnpm --filter @whiteboard/server prisma:generate",
     "prisma:migrate": "pnpm --filter @whiteboard/server prisma:migrate"
   },
   "devDependencies": {
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.3",
+    "oxfmt": "^0.59.0",
+    "oxlint": "^1.74.0"
   }
 }
