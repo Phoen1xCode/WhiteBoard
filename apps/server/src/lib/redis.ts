@@ -1,5 +1,6 @@
-import "dotenv/config";
 import Redis from "ioredis";
+
+import "dotenv/config";
 
 /** Minimal Redis surface used by blacklist + rate-limit. */
 export interface RedisLike {
@@ -9,11 +10,7 @@ export interface RedisLike {
   disconnect(): void;
   set(key: string, value: string, mode?: string, ttl?: number): Promise<"OK" | null>;
   exists(...keys: string[]): Promise<number>;
-  eval(
-    script: string,
-    numKeys: number,
-    ...args: (string | number)[]
-  ): Promise<unknown>;
+  eval(script: string, numKeys: number, ...args: (string | number)[]): Promise<unknown>;
   on?(event: string, listener: (...args: unknown[]) => void): unknown;
 }
 
@@ -44,12 +41,7 @@ class MemoryRedis implements RedisLike {
     }
   }
 
-  async set(
-    key: string,
-    value: string,
-    mode?: string,
-    ttl?: number
-  ): Promise<"OK" | null> {
+  async set(key: string, value: string, mode?: string, ttl?: number): Promise<"OK" | null> {
     const expiresAt =
       mode === "EX" && typeof ttl === "number" ? Date.now() + ttl * 1000 : undefined;
     this.store.set(key, { value, expiresAt });
@@ -65,11 +57,7 @@ class MemoryRedis implements RedisLike {
     return count;
   }
 
-  async eval(
-    script: string,
-    _numKeys: number,
-    ...args: (string | number)[]
-  ): Promise<unknown> {
+  async eval(script: string, _numKeys: number, ...args: (string | number)[]): Promise<unknown> {
     // Only the sliding-window rate-limit script is supported in memory mode.
     if (!script.includes("ZREMRANGEBYSCORE")) {
       throw new Error("Unsupported eval script in memory redis");
@@ -87,7 +75,7 @@ class MemoryRedis implements RedisLike {
       this.zsets.set(key, zset);
     }
 
-    for (const [m, score] of [...zset.entries()]) {
+    for (const [m, score] of zset.entries()) {
       if (score <= now - window) zset.delete(m);
     }
 

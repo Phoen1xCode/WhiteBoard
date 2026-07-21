@@ -1,11 +1,7 @@
 {
   "name": "whiteboard",
-  "private": true,
   "version": "0.0.1",
-  "packageManager": "pnpm@11.5.2",
-  "engines": {
-    "node": ">=20.19"
-  },
+  "private": true,
   "scripts": {
     "dev:web": "pnpm --filter @whiteboard/web dev",
     "dev:server": "pnpm --filter @whiteboard/server dev",
@@ -23,5 +19,9 @@
     "concurrently": "^10.0.3",
     "oxfmt": "^0.59.0",
     "oxlint": "^1.74.0"
-  }
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "packageManager": "pnpm@11.5.2"
 }
