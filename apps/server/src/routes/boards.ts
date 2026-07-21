@@ -1,11 +1,51 @@
 import Router from "@koa/router";
+import type { Context } from "koa";
+import { z } from "zod";
 import * as boardsController from "../controllers/boardsController";
+import { authMiddleware } from "../middleware/auth";
+import { getClientIp, rateLimit } from "../middleware/rate-limit";
+import { validateBody } from "../middleware/validate";
+
+const createBoardBodySchema = z
+  .object({
+    title: z.string().min(1).max(100).optional(),
+  })
+  .default({});
+
+const updateBoardTitleBodySchema = z.object({
+  title: z.string().min(1).max(100),
+});
+
+function getBoardCreateRateLimitKey(ctx: Context): string {
+  return ctx.state.user?.id ?? getClientIp(ctx);
+}
+
+const createBoardRateLimit = rateLimit({
+  keyPrefix: "rate:user:board:create",
+  limit: 20,
+  windowMs: 60_000,
+  keyGenerator: getBoardCreateRateLimitKey,
+});
 
 export function createBoardsRouter(): Router {
   const router = new Router();
-  router.get("/api/v1/boards", boardsController.listBoards);
-  router.post("/api/v1/boards", boardsController.createBoard);
-  router.get("/api/v1/boards/:id", boardsController.getBoard);
-  router.delete("/api/v1/boards/:id", boardsController.deleteBoard);
+
+  router.get("/api/v1/boards", authMiddleware, boardsController.listBoards);
+  router.post(
+    "/api/v1/boards",
+    authMiddleware,
+    createBoardRateLimit,
+    validateBody(createBoardBodySchema),
+    boardsController.createBoard
+  );
+  router.get("/api/v1/boards/:id", authMiddleware, boardsController.getBoard);
+  router.patch(
+    "/api/v1/boards/:id",
+    authMiddleware,
+    validateBody(updateBoardTitleBodySchema),
+    boardsController.updateBoardTitle
+  );
+  router.delete("/api/v1/boards/:id", authMiddleware, boardsController.deleteBoard);
+
   return router;
 }

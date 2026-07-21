@@ -7,7 +7,9 @@ export interface CreatePermissionInput {
   role: PermissionRole;
 }
 
-export async function createPermission(input: CreatePermissionInput): Promise<Permission> {
+export async function createPermission(
+  input: CreatePermissionInput,
+): Promise<Permission> {
   return await prisma.permission.create({
     data: input,
   });
@@ -15,7 +17,7 @@ export async function createPermission(input: CreatePermissionInput): Promise<Pe
 
 export async function findPermission(
   boardId: string,
-  userId: string
+  userId: string,
 ): Promise<Permission | null> {
   return await prisma.permission.findUnique({
     where: {
@@ -27,7 +29,9 @@ export async function findPermission(
   });
 }
 
-export async function listBoardPermissions(boardId: string): Promise<Permission[]> {
+export async function listBoardPermissions(
+  boardId: string,
+): Promise<Permission[]> {
   return await prisma.permission.findMany({
     where: { boardId },
     orderBy: { createdAt: "asc" },

@@ -1,6 +1,36 @@
 import type { Server, Socket } from "socket.io";
 import type { WhiteBoardOperation } from "@whiteboard/shared/types";
-import { applyOperationToSnapshot } from "../services/boardsService";
+import { checkRateLimit } from "../middleware/rate-limit";
+import { commitOperation } from "../services/operation-service";
+
+async function enforceSocketRateLimit(
+  socket: Socket,
+  key: string,
+  limit: number,
+  windowMs: number
+): Promise<boolean> {
+  try {
+    const result = await checkRateLimit(key, limit, windowMs);
+
+    if (result.allowed) {
+      return true;
+    }
+
+    socket.emit("error", {
+      code: "RATE_LIMITED",
+      message: "Too many requests",
+      retryAfterMs: result.retryAfterMs,
+    });
+    return false;
+  } catch (error) {
+    console.error("Socket rate limit failed:", error);
+    socket.emit("error", {
+      code: "RATE_LIMIT_UNAVAILABLE",
+      message: "Rate limit is unavailable",
+    });
+    return false;
+  }
+}
 
 export function initSocket(io: Server) {
   io.on("connection", (socket: Socket) => {
@@ -21,13 +51,23 @@ export function initSocket(io: Server) {
 
     socket.on("op", async (operation: WhiteBoardOperation) => {
       const boardId = operation.boardId;
+      const allowed = await enforceSocketRateLimit(
+        socket,
+        `rate:board:${boardId}:socket:${socket.id}:op`,
+        120,
+        60_000
+      );
+
+      if (!allowed) {
+        return;
+      }
 
       // 转发给其他客户端
       socket.to(boardId).emit("op", operation);
 
       // 持久化到数据库
       try {
-        await applyOperationToSnapshot(boardId, operation);
+        await commitOperation({ boardId, operation });
       } catch (error) {
         console.error("Failed to persist operation:", error);
       }
@@ -35,7 +75,18 @@ export function initSocket(io: Server) {
 
     socket.on(
       "cursor",
-      (payload: { boardId: string; x: number; y: number }) => {
+      async (payload: { boardId: string; x: number; y: number }) => {
+        const allowed = await enforceSocketRateLimit(
+          socket,
+          `rate:board:${payload.boardId}:socket:${socket.id}:cursor`,
+          60,
+          10_000
+        );
+
+        if (!allowed) {
+          return;
+        }
+
         socket.to(payload.boardId).emit("cursor", {
           ...payload,
           clientId: socket.id,
