@@ -21,6 +21,7 @@ reset 到 `fcca376` 后，项目处于 Bun 引入之前的状态。
 - pnpm workspace。
 
 当前缺失能力：
+
 - 用户认证模型。
 - JWT 登录、刷新、登出。
 - Redis 客户端封装。
@@ -69,18 +70,7 @@ origin/feature-refactor
 - 根 `package.json` 增加统一脚本。
 - 子包依赖保持原版本优先，不做大版本升级。
 
-建议根脚本：
-
-```json
-{
-  "scripts": {
-    "dev:web": "pnpm --filter @whiteboard/web dev",
-    "dev:server": "pnpm --filter @whiteboard/server dev",
-    "build:web": "pnpm --filter @whiteboard/web build",
-    "lint": "pnpm -r lint"
-  }
-}
-```
+建议根脚本以根目录 `package.json` 的 `scripts` 为准（当前 `lint`/`fmt` 为 oxlint/oxfmt，不再 per-package eslint）。
 
 验证标准：
 
@@ -336,10 +326,10 @@ OperationService 职责：
 核心 API：
 
 ```ts
-commitOperation(input)
-getOperationsAfter(boardId, fromSeq)
-replayBoard(boardId)
-replayOps(snapshot, operations)
+commitOperation(input);
+getOperationsAfter(boardId, fromSeq);
+replayBoard(boardId);
+replayOps(snapshot, operations);
 ```
 
 验证标准：
@@ -503,4 +493,3 @@ chore(docker): update node pnpm deployment
 - 多实例 Redis adapter。
 - 复杂权限管理 UI。
 - 完整 refresh token 轮换策略。
-

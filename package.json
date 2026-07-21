@@ -1,22 +1,27 @@
 {
   "name": "whiteboard",
-  "private": true,
   "version": "0.0.1",
-  "packageManager": "pnpm@11.5.2",
-  "engines": {
-    "node": ">=20.19"
-  },
+  "private": true,
   "scripts": {
     "dev:web": "pnpm --filter @whiteboard/web dev",
     "dev:server": "pnpm --filter @whiteboard/server dev",
     "build:web": "pnpm --filter @whiteboard/web build",
     "typecheck": "pnpm --filter @whiteboard/shared type-check && pnpm --filter @whiteboard/server typecheck && pnpm --filter @whiteboard/web exec tsc -b --pretty false",
     "test": "pnpm --filter @whiteboard/server test",
-    "lint": "pnpm -r lint",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
     "prisma:generate": "pnpm --filter @whiteboard/server prisma:generate",
     "prisma:migrate": "pnpm --filter @whiteboard/server prisma:migrate"
   },
   "devDependencies": {
-    "concurrently": "^10.0.3"
-  }
+    "concurrently": "^10.0.3",
+    "oxfmt": "^0.59.0",
+    "oxlint": "^1.74.0"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "packageManager": "pnpm@11.5.2"
 }
