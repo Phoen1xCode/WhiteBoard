@@ -1,4 +1,5 @@
 import type { User } from "../../prisma/generated/client";
+
 import { prisma } from "../lib/prisma";
 
 export interface CreateUserInput {
@@ -25,9 +26,7 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   });
 }
 
-export async function findUserByUsername(
-  username: string,
-): Promise<User | null> {
+export async function findUserByUsername(username: string): Promise<User | null> {
   return await prisma.user.findUnique({
     where: { username },
   });

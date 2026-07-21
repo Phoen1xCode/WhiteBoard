@@ -1,4 +1,5 @@
 import { Palette } from "lucide-react";
+
 import { useWhiteboardStore } from "../../store/whiteboardStore";
 import { ColorSelector } from "../style/ColorSelector";
 import { FillColorSelector } from "../style/FillColorSelector";
@@ -48,14 +49,14 @@ export function StylePanel() {
   }
 
   return (
-    <div className="fixed left-4 top-20 w-52 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+    <div className="fixed top-20 left-4 w-52 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border-b border-gray-200">
+      <div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2.5">
         <Palette size={14} className="text-gray-500" />
         <span className="text-xs font-medium text-gray-700">Style</span>
       </div>
 
-      <div className="p-3 space-y-4">
+      <div className="space-y-4 p-3">
         {/* Stroke Color */}
         <ColorSelector
           value={currentStyle.strokeColor}
@@ -81,9 +82,7 @@ export function StylePanel() {
         {/* Line Style */}
         <LineStyleSelector
           value={currentStyle.strokeDashArray}
-          onChange={(dashArray) =>
-            setCurrentStyle({ strokeDashArray: dashArray })
-          }
+          onChange={(dashArray) => setCurrentStyle({ strokeDashArray: dashArray })}
         />
       </div>
     </div>

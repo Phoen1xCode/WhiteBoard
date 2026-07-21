@@ -1,5 +1,5 @@
-import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 /**
  * 描边宽度滑块组件
@@ -12,21 +12,12 @@ interface StrokeWidthSliderProps {
   max?: number; // 最大值
 }
 
-export function StrokeWidthSlider({
-  value,
-  onChange,
-  min = 1,
-  max = 20,
-}: StrokeWidthSliderProps) {
+export function StrokeWidthSlider({ value, onChange, min = 1, max = 20 }: StrokeWidthSliderProps) {
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <Label className="text-xs font-medium text-muted-foreground">
-          线条宽度
-        </Label>
-        <span className="text-xs font-mono text-muted-foreground">
-          {value}px
-        </span>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-medium text-muted-foreground">线条宽度</Label>
+        <span className="font-mono text-xs text-muted-foreground">{value}px</span>
       </div>
       <Slider
         value={[value]}

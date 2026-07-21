@@ -182,12 +182,12 @@ Browser
 目标形态：
 
 ```ts
-const app = createKoaApp(dependencies)
-const server = http.createServer(app.callback())
-const io = createSocketServer(server, dependencies)
+const app = createKoaApp(dependencies);
+const server = http.createServer(app.callback());
+const io = createSocketServer(server, dependencies);
 
-await startBackgroundWorkers(dependencies)
-server.listen(config.port)
+await startBackgroundWorkers(dependencies);
+server.listen(config.port);
 ```
 
 ### 5.2 Middleware 层
@@ -352,7 +352,7 @@ io(URL, {
   auth: {
     token: accessToken,
   },
-})
+});
 ```
 
 服务端在 `io.use()` 中校验 JWT：
@@ -564,10 +564,10 @@ HTTP 响应建议统一格式：
 Socket.IO 错误建议统一：
 
 ```ts
-socket.emit('error', {
-  code: 'FORBIDDEN',
-  message: 'No permission to edit this board',
-})
+socket.emit("error", {
+  code: "FORBIDDEN",
+  message: "No permission to edit this board",
+});
 ```
 
 如果事件使用 ack，优先通过 ack 返回错误：
@@ -576,10 +576,10 @@ socket.emit('error', {
 ack({
   ok: false,
   error: {
-    code: 'RATE_LIMITED',
-    message: 'Too many operations',
+    code: "RATE_LIMITED",
+    message: "Too many operations",
   },
-})
+});
 ```
 
 ## 13. 部署架构
@@ -713,4 +713,3 @@ docs/refactor-from-fcca376-plan.md
 
 - 不重新引入 Bun runtime、Bun lockfile 或 Elysia。
 - 只移植经过确认的后端领域能力，不顺带重写前端绘图引擎或引入 CRDT。
-

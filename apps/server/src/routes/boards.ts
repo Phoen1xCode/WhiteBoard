@@ -1,9 +1,8 @@
-import Router from "@koa/router";
 import type { Context } from "koa";
-import {
-  createBoardBodySchema,
-  updateBoardTitleBodySchema,
-} from "@whiteboard/shared/schemas";
+
+import Router from "@koa/router";
+import { createBoardBodySchema, updateBoardTitleBodySchema } from "@whiteboard/shared/schemas";
+
 import * as boardsController from "../controllers/boardsController";
 import { authMiddleware } from "../middleware/auth";
 import { getClientIp, rateLimit } from "../middleware/rate-limit";
@@ -29,14 +28,14 @@ export function createBoardsRouter(): Router {
     authMiddleware,
     createBoardRateLimit,
     validateBody(createBoardBodySchema),
-    boardsController.createBoard
+    boardsController.createBoard,
   );
   router.get("/api/v1/boards/:id", authMiddleware, boardsController.getBoard);
   router.patch(
     "/api/v1/boards/:id",
     authMiddleware,
     validateBody(updateBoardTitleBodySchema),
-    boardsController.updateBoardTitle
+    boardsController.updateBoardTitle,
   );
   router.delete("/api/v1/boards/:id", authMiddleware, boardsController.deleteBoard);
 

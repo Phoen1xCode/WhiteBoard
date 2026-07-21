@@ -379,11 +379,7 @@ onCursor((data: { clientId; x; y }) => {
 实现了完善的 WebSocket 连接状态管理：
 
 ```typescript
-type ConnectionStatus =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "reconnecting";
+type ConnectionStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
 ```
 
 - 自动重连机制（最多 10 次，延迟 1-5 秒）
@@ -398,23 +394,23 @@ type ConnectionStatus =
 
 **认证：**
 
-| 方法 | 路径 | 功能 |
-| --- | --- | --- |
-| POST | `/api/v1/auth/register` | 注册 |
-| POST | `/api/v1/auth/login` | 登录（access + refresh） |
-| POST | `/api/v1/auth/refresh` | 刷新 access |
-| POST | `/api/v1/auth/logout` | 登出（JWT 黑名单） |
-| GET | `/api/v1/auth/me` | 当前用户 |
+| 方法 | 路径                    | 功能                     |
+| ---- | ----------------------- | ------------------------ |
+| POST | `/api/v1/auth/register` | 注册                     |
+| POST | `/api/v1/auth/login`    | 登录（access + refresh） |
+| POST | `/api/v1/auth/refresh`  | 刷新 access              |
+| POST | `/api/v1/auth/logout`   | 登出（JWT 黑名单）       |
+| GET  | `/api/v1/auth/me`       | 当前用户                 |
 
 **白板（需登录；按 owner/editor/viewer 鉴权）：**
 
-| 方法   | 路径                 | 功能         | 说明           |
-| ------ | -------------------- | ------------ | -------------- |
-| GET    | `/api/v1/boards`     | 获取白板列表 | 当前用户可访问 |
-| POST   | `/api/v1/boards`     | 创建新白板   | 创建者为 owner |
+| 方法   | 路径                 | 功能         | 说明             |
+| ------ | -------------------- | ------------ | ---------------- |
+| GET    | `/api/v1/boards`     | 获取白板列表 | 当前用户可访问   |
+| POST   | `/api/v1/boards`     | 创建新白板   | 创建者为 owner   |
 | GET    | `/api/v1/boards/:id` | 获取白板详情 | 快照 + `lastSeq` |
-| PATCH  | `/api/v1/boards/:id` | 更新标题     | owner/editor |
-| DELETE | `/api/v1/boards/:id` | 删除白板     | 仅 owner |
+| PATCH  | `/api/v1/boards/:id` | 更新标题     | owner/editor     |
+| DELETE | `/api/v1/boards/:id` | 删除白板     | 仅 owner         |
 
 **2. WebSocket 事件系统**
 
@@ -422,23 +418,23 @@ type ConnectionStatus =
 
 **客户端 → 服务器：**
 
-| 事件 | 数据 | 功能 |
-| --- | --- | --- |
-| `board:join` | `{ boardId }` | 加入白板房间 |
-| `board:leave` | `{ boardId }` | 离开白板房间 |
-| `operation:commit` | `{ boardId, operation, clientOpId? }` | 提交操作（ack） |
-| `operation:replay` | `{ boardId, fromSeq }` | 拉取 `seq > fromSeq` |
-| `cursor:update` | `{ boardId, x, y }` | 发送光标 |
+| 事件               | 数据                                  | 功能                 |
+| ------------------ | ------------------------------------- | -------------------- |
+| `board:join`       | `{ boardId }`                         | 加入白板房间         |
+| `board:leave`      | `{ boardId }`                         | 离开白板房间         |
+| `operation:commit` | `{ boardId, operation, clientOpId? }` | 提交操作（ack）      |
+| `operation:replay` | `{ boardId, fromSeq }`                | 拉取 `seq > fromSeq` |
+| `cursor:update`    | `{ boardId, x, y }`                   | 发送光标             |
 
 **服务器 → 客户端：**
 
-| 事件 | 数据 | 功能 |
-| --- | --- | --- |
-| `board:joined` / ack | members 等 | join 成功 |
-| `board:user-joined` / `board:user-left` | user / socketId | 成员变更 |
-| `operation:committed` | 含 `seq` 的已提交 op | 广播给房间其他人 |
-| `operation:replayed` / ack | ops 列表 | 断线补齐 |
-| `cursor:updated` | userId, x, y… | 他人光标 |
+| 事件                                    | 数据                 | 功能             |
+| --------------------------------------- | -------------------- | ---------------- |
+| `board:joined` / ack                    | members 等           | join 成功        |
+| `board:user-joined` / `board:user-left` | user / socketId      | 成员变更         |
+| `operation:committed`                   | 含 `seq` 的已提交 op | 广播给房间其他人 |
+| `operation:replayed` / ack              | ops 列表             | 断线补齐         |
+| `cursor:updated`                        | userId, x, y…        | 他人光标         |
 
 **3. operation:commit 路径**
 
@@ -559,12 +555,12 @@ cd docker && docker-compose restart server
 
 ### Docker 服务说明
 
-| 服务     | 端口 | 说明                 |
-| -------- | ---- | -------------------- |
-| web      | 8080 | 前端 Nginx 服务      |
+| 服务     | 端口 | 说明                                     |
+| -------- | ---- | ---------------------------------------- |
+| web      | 8080 | 前端 Nginx 服务                          |
 | server   | 3000 | 后端 API + WebSocket（容器内 PORT=3000） |
-| postgres | 5432 | PostgreSQL 数据库    |
-| redis    | 6379 | 限流 + JWT 黑名单 |
+| postgres | 5432 | PostgreSQL 数据库                        |
+| redis    | 6379 | 限流 + JWT 黑名单                        |
 
 ### Docker 文件结构
 

@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { resetRedisForTests } from "../lib/redis";
 
 const users = new Map<string, any>();
@@ -10,11 +11,7 @@ vi.mock("../repositories/user-repository", () => ({
   findUserByUsername: async (username: string) =>
     [...users.values()].find((u) => u.username === username) ?? null,
   findUserById: async (id: string) => users.get(id) ?? null,
-  createUser: async (input: {
-    email: string;
-    username: string;
-    passwordHash: string;
-  }) => {
+  createUser: async (input: { email: string; username: string; passwordHash: string }) => {
     const user = {
       id: `user-${users.size + 1}`,
       email: input.email,

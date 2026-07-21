@@ -1,6 +1,7 @@
 import type { Context, Middleware } from "koa";
-import { failure } from "../lib/response";
+
 import { connectRedis } from "../lib/redis";
+import { failure } from "../lib/response";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -83,7 +84,7 @@ export function getClientIp(ctx: Context): string {
 export async function checkRateLimit(
   key: string,
   limit: number,
-  windowMs: number
+  windowMs: number,
 ): Promise<RateLimitResult> {
   const redis = await connectRedis();
   const now = Date.now();
@@ -99,7 +100,7 @@ export function rateLimit(options: RateLimitOptions): Middleware {
     const result = await checkRateLimit(
       `${options.keyPrefix}:${keyPart}`,
       options.limit,
-      options.windowMs
+      options.windowMs,
     );
 
     ctx.set("X-RateLimit-Limit", String(result.limit));

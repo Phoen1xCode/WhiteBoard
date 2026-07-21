@@ -1,5 +1,6 @@
-import "koa";
 import type { AuthenticatedUser, JwtTokenPayload } from "./auth";
+
+import "koa";
 
 declare module "koa" {
   interface DefaultState {

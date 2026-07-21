@@ -1,4 +1,3 @@
-import { io, type Socket } from "socket.io-client";
 import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 import type {
   AckResult,
@@ -7,6 +6,9 @@ import type {
   OperationAckPayload,
   OperationReplayResultPayload,
 } from "@whiteboard/shared/types/socket";
+
+import { io, type Socket } from "socket.io-client";
+
 import { refreshAccessToken } from "./api";
 import { getAccessToken } from "./auth";
 
@@ -19,11 +21,7 @@ type ReadyWaiter = {
   reject: (error: Error) => void;
 };
 
-export type ConnectionStatus =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "reconnecting";
+export type ConnectionStatus = "connecting" | "connected" | "disconnected" | "reconnecting";
 
 export type CursorData = {
   clientId: string;
@@ -207,9 +205,7 @@ function wireSocketEvents(next: Socket) {
       }
     }
 
-    failBoardReady(
-      lastError instanceof Error ? lastError.message : "Failed to join board"
-    );
+    failBoardReady(lastError instanceof Error ? lastError.message : "Failed to join board");
     setStatus("disconnected");
   });
 
@@ -263,7 +259,7 @@ function wireSocketEvents(next: Socket) {
         username: payload.username,
         x: payload.x,
         y: payload.y,
-      })
+      }),
     );
   });
 }
@@ -305,15 +301,13 @@ function emitWithAck<T>(event: string, payload: unknown): Promise<AckResult<T>> 
       return;
     }
 
-    socket
-      .timeout(8_000)
-      .emit(event, payload, (err: Error | null, result: AckResult<T>) => {
-        if (err) {
-          reject(new SocketCommitError(err.message, "ACK_TIMEOUT", false));
-          return;
-        }
-        resolve(result);
-      });
+    socket.timeout(8_000).emit(event, payload, (err: Error | null, result: AckResult<T>) => {
+      if (err) {
+        reject(new SocketCommitError(err.message, "ACK_TIMEOUT", false));
+        return;
+      }
+      resolve(result);
+    });
   });
 }
 
@@ -342,7 +336,7 @@ export async function requestReplay(boardId: string, fromSeq: number): Promise<v
 
 async function reconcileClientOp(
   boardId: string,
-  clientOpId: string
+  clientOpId: string,
 ): Promise<OperationAckPayload | null> {
   await waitUntilBoardJoined();
 
@@ -383,7 +377,7 @@ async function reconcileClientOp(
 
 async function commitOnce(
   operation: WhiteBoardOperation,
-  clientOpId: string
+  clientOpId: string,
 ): Promise<OperationAckPayload> {
   await waitUntilBoardJoined();
 
@@ -401,7 +395,7 @@ async function commitOnce(
     throw new SocketCommitError(
       result.error.message,
       result.error.code,
-      isDefinitiveErrorCode(result.error.code)
+      isDefinitiveErrorCode(result.error.code),
     );
   }
 
@@ -423,7 +417,7 @@ export function disconnect(boardId: string) {
 
 export async function sendOperation(
   operation: WhiteBoardOperation,
-  clientOpId: string
+  clientOpId: string,
 ): Promise<OperationAckPayload> {
   const boardId = operation.boardId;
 
@@ -493,8 +487,8 @@ export async function sendOperation(
     boardId,
     current.then(
       () => undefined,
-      () => undefined
-    )
+      () => undefined,
+    ),
   );
   return current;
 }

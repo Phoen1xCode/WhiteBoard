@@ -1,10 +1,6 @@
 import type { WhiteBoardSnapshot } from "@whiteboard/shared/types";
-import {
-  clearSession,
-  getAccessToken,
-  getRefreshToken,
-  saveSession,
-} from "./auth";
+
+import { clearSession, getAccessToken, getRefreshToken, saveSession } from "./auth";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
 
@@ -67,11 +63,7 @@ export async function refreshAccessToken(): Promise<string | null> {
   return body.data.tokens.accessToken;
 }
 
-async function request<T>(
-  path: string,
-  init: RequestInit = {},
-  auth = true
-): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, auth = true): Promise<T> {
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type") && init.body) {
     headers.set("Content-Type", "application/json");
@@ -113,7 +105,7 @@ async function request<T>(
 export async function register(
   email: string,
   username: string,
-  password: string
+  password: string,
 ): Promise<AuthResult> {
   const body = await request<ApiSuccess<AuthResult>>(
     "/api/v1/auth/register",
@@ -121,7 +113,7 @@ export async function register(
       method: "POST",
       body: JSON.stringify({ email, username, password }),
     },
-    false
+    false,
   );
   saveSession(body.data.user, body.data.tokens);
   return body.data;
@@ -134,7 +126,7 @@ export async function login(email: string, password: string): Promise<AuthResult
       method: "POST",
       body: JSON.stringify({ email, password }),
     },
-    false
+    false,
   );
   saveSession(body.data.user, body.data.tokens);
   return body.data;

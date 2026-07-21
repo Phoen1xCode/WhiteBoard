@@ -1,5 +1,8 @@
-import { useEffect } from "react";
 import type { WhiteBoardOperation } from "@whiteboard/shared/types";
+
+import { useEffect } from "react";
+
+import { getBoard } from "../lib/api";
 import {
   connect,
   disconnect,
@@ -8,7 +11,6 @@ import {
   onOperation,
   resetLastConfirmedSeq,
 } from "../lib/socket";
-import { getBoard } from "../lib/api";
 import { useWhiteboardStore } from "../store/whiteboardStore";
 
 export function useBoardSync(boardId: string) {

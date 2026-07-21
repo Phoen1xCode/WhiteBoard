@@ -1,4 +1,5 @@
 import type { Operation, Prisma } from "../../prisma/generated/client";
+
 import { prisma } from "../lib/prisma";
 
 export interface CreateOperationInput {
@@ -35,10 +36,7 @@ export async function createOperation(input: CreateOperationInput): Promise<Oper
   });
 }
 
-export async function findOperationsAfter(
-  boardId: string,
-  seq: number
-): Promise<Operation[]> {
+export async function findOperationsAfter(boardId: string, seq: number): Promise<Operation[]> {
   return await prisma.operation.findMany({
     where: {
       boardId,
@@ -60,7 +58,7 @@ export async function findLatestOperationSeq(boardId: string): Promise<number | 
 
 export async function findOperationByClientOpId(
   boardId: string,
-  clientOpId: string
+  clientOpId: string,
 ): Promise<Operation | null> {
   return await prisma.operation.findFirst({
     where: { boardId, clientOpId },
@@ -77,7 +75,7 @@ export interface CommitOperationAtomicResult {
  * clientOpId conflicts (P2002) resolve by returning the existing row.
  */
 export async function commitOperationAtomic(
-  input: CommitOperationAtomicInput
+  input: CommitOperationAtomicInput,
 ): Promise<CommitOperationAtomicResult> {
   try {
     return await prisma.$transaction(async (tx) => {

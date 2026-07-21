@@ -1,5 +1,8 @@
 import bcrypt from "bcryptjs";
+
 import type { User } from "../../prisma/generated/client";
+import type { AuthResult, JwtTokenPayload, SafeUser, TokenPair } from "../types/auth";
+
 import { AppError } from "../lib/app-error";
 import { signTokenPair, verifyRefreshToken } from "../lib/jwt";
 import { blacklistToken, isTokenBlacklisted } from "../lib/token-blacklist";
@@ -9,7 +12,6 @@ import {
   findUserById,
   findUserByUsername,
 } from "../repositories/user-repository";
-import type { AuthResult, JwtTokenPayload, SafeUser, TokenPair } from "../types/auth";
 
 export interface RegisterInput {
   email: string;
@@ -130,8 +132,7 @@ export async function logout(input: LogoutInput): Promise<void> {
   try {
     const refreshPayload = verifyRefreshTokenOrThrow(input.refreshToken);
     await blacklistToken(refreshPayload.jti, refreshPayload.exp);
-  } catch {
-  }
+  } catch {}
 }
 
 export async function getMe(userId: string): Promise<SafeUser> {

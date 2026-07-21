@@ -1,18 +1,14 @@
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login, register } from "../lib/api";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+
+import { login, register } from "../lib/api";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -40,14 +36,12 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl border-border/50">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4">
+      <Card className="w-full max-w-md border-border/50 shadow-xl">
         <CardHeader>
           <CardTitle>{mode === "login" ? "登录" : "注册"}</CardTitle>
           <CardDescription>
-            {mode === "login"
-              ? "登录后创建和管理协作白板"
-              : "创建一个账号以开始使用"}
+            {mode === "login" ? "登录后创建和管理协作白板" : "创建一个账号以开始使用"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -101,7 +95,7 @@ export function LoginPage() {
               )}
             </Button>
           </form>
-          <p className="mt-4 text-sm text-center text-muted-foreground">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             {mode === "login" ? (
               <>
                 还没有账号？{" "}

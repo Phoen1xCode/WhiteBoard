@@ -1,12 +1,8 @@
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 /**
  * 颜色选择器组件
@@ -18,22 +14,16 @@ interface ColorSelectorProps {
   presetColors?: string[]; // 预设颜色数组
 }
 
-export function ColorSelector({
-  value,
-  onChange,
-  presetColors,
-}: ColorSelectorProps) {
+export function ColorSelector({ value, onChange, presetColors }: ColorSelectorProps) {
   return (
     <div className="space-y-3">
-      <Label className="text-xs font-medium text-muted-foreground">
-        线条颜色
-      </Label>
+      <Label className="text-xs font-medium text-muted-foreground">线条颜色</Label>
       <div className="flex items-center gap-3">
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="h-10 w-10 p-0 border-2"
+              className="h-10 w-10 border-2 p-0"
               style={{ backgroundColor: value }}
               aria-label={`Current color: ${value}`}
             >
@@ -47,7 +37,7 @@ export function ColorSelector({
                   type="color"
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
-                  className="h-10 w-14 p-1 cursor-pointer"
+                  className="h-10 w-14 cursor-pointer p-1"
                   aria-label={"Select stroke color"}
                 />
                 <Input
@@ -69,9 +59,7 @@ export function ColorSelector({
                       onClick={() => onChange(color)}
                       className={cn(
                         "h-7 w-7 rounded-md border-2 p-0 transition-all hover:scale-110",
-                        value === color
-                          ? "ring-2 ring-primary ring-offset-2"
-                          : "border-border"
+                        value === color ? "ring-2 ring-primary ring-offset-2" : "border-border",
                       )}
                       style={{ backgroundColor: color }}
                       aria-label={`Select color ${color}`}
@@ -82,9 +70,7 @@ export function ColorSelector({
             </div>
           </PopoverContent>
         </Popover>
-        <span className="text-xs text-muted-foreground font-mono uppercase">
-          {value}
-        </span>
+        <span className="font-mono text-xs text-muted-foreground uppercase">{value}</span>
       </div>
     </div>
   );

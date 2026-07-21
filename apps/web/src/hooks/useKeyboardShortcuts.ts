@@ -1,6 +1,8 @@
-import { useEffect } from "react";
-import { useWhiteboardStore } from "../store/whiteboardStore";
 import type { ShapeType } from "@whiteboard/shared/types";
+
+import { useEffect } from "react";
+
+import { useWhiteboardStore } from "../store/whiteboardStore";
 
 interface UseKeyboardShortcutsOptions {
   boardId: string;
@@ -8,9 +10,7 @@ interface UseKeyboardShortcutsOptions {
 
 export function useKeyboardShortcuts({ boardId }: UseKeyboardShortcutsOptions) {
   const setCurrentTool = useWhiteboardStore((s) => s.setCurrentTool);
-  const deleteSelectedElement = useWhiteboardStore(
-    (s) => s.deleteSelectedElement
-  );
+  const deleteSelectedElement = useWhiteboardStore((s) => s.deleteSelectedElement);
   const undo = useWhiteboardStore((s) => s.undo);
   const redo = useWhiteboardStore((s) => s.redo);
 
@@ -18,11 +18,7 @@ export function useKeyboardShortcuts({ boardId }: UseKeyboardShortcutsOptions) {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Skip if focus is on input elements
       const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
         return;
       }
 
@@ -45,8 +41,7 @@ export function useKeyboardShortcuts({ boardId }: UseKeyboardShortcutsOptions) {
 
       // Delete selected element: Delete or Backspace
       if (e.key === "Delete" || e.key === "Backspace") {
-        const selectedElementId =
-          useWhiteboardStore.getState().selectedElementId;
+        const selectedElementId = useWhiteboardStore.getState().selectedElementId;
         if (selectedElementId) {
           e.preventDefault();
           deleteSelectedElement(boardId);

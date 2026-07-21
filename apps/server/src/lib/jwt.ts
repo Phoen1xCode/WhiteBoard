@@ -1,6 +1,8 @@
-import "dotenv/config";
 import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
+
 import type { JwtTokenPayload, TokenPair, TokenType } from "../types/auth";
+
+import "dotenv/config";
 
 export interface SignTokenInput {
   subject: string;
@@ -21,7 +23,7 @@ function getSecret(tokenType: TokenType): string {
 
 function getExpiresIn(
   tokenType: TokenType,
-  expiresIn?: SignOptions["expiresIn"]
+  expiresIn?: SignOptions["expiresIn"],
 ): SignOptions["expiresIn"] {
   if (expiresIn) {
     return expiresIn;

@@ -1,11 +1,3 @@
-import type { Server, Socket } from "socket.io";
-import { ZodError } from "zod";
-import {
-  boardJoinSchema,
-  cursorUpdateSchema,
-  operationCommitSchema,
-  operationReplaySchema,
-} from "@whiteboard/shared/schemas";
 import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 import type {
   AckResult,
@@ -15,6 +7,18 @@ import type {
   OperationReplayResultPayload,
   SocketUser,
 } from "@whiteboard/shared/types/socket";
+import type { Server, Socket } from "socket.io";
+
+import {
+  boardJoinSchema,
+  cursorUpdateSchema,
+  operationCommitSchema,
+  operationReplaySchema,
+} from "@whiteboard/shared/schemas";
+import { ZodError } from "zod";
+
+import type { AuthenticatedUser } from "../types/auth";
+
 import { isAppError } from "../lib/app-error";
 import { verifyAccessToken } from "../lib/jwt";
 import { isTokenBlacklisted } from "../lib/token-blacklist";
@@ -26,7 +30,6 @@ import {
   getOperationsAfter,
   type CommittedOperation,
 } from "../services/operation-service";
-import type { AuthenticatedUser } from "../types/auth";
 
 type AuthedSocket = Socket & {
   data: {
@@ -107,7 +110,7 @@ async function enforceSocketRateLimit(
   socket: Socket,
   key: string,
   limit: number,
-  windowMs: number
+  windowMs: number,
 ): Promise<AckResult<never> | null> {
   try {
     const result = await checkRateLimit(key, limit, windowMs);
@@ -210,7 +213,7 @@ export function initSocket(io: Server): void {
           ack?.(result);
           socket.emit("error", result.error);
         }
-      }
+      },
     );
 
     socket.on("board:leave", async (rawPayload: unknown) => {
@@ -224,10 +227,7 @@ export function initSocket(io: Server): void {
 
     socket.on(
       "operation:commit",
-      async (
-        rawPayload: unknown,
-        ack?: (result: AckResult<OperationAckPayload>) => void
-      ) => {
+      async (rawPayload: unknown, ack?: (result: AckResult<OperationAckPayload>) => void) => {
         try {
           const payload = operationCommitSchema.parse(rawPayload);
 
@@ -241,7 +241,7 @@ export function initSocket(io: Server): void {
             socket,
             `rate:board:${payload.boardId}:user:${user.id}:op`,
             60,
-            1_000
+            1_000,
           );
           if (rateLimited) {
             ack?.(rateLimited);
@@ -276,22 +276,18 @@ export function initSocket(io: Server): void {
           ack?.(result);
           socket.emit("error", result.error);
         }
-      }
+      },
     );
 
     socket.on(
       "operation:replay",
       async (
         rawPayload: unknown,
-        ack?: (result: AckResult<OperationReplayResultPayload>) => void
+        ack?: (result: AckResult<OperationReplayResultPayload>) => void,
       ) => {
         try {
           const payload = operationReplaySchema.parse(rawPayload);
-          const operations = await getOperationsAfter(
-            payload.boardId,
-            payload.fromSeq,
-            user.id
-          );
+          const operations = await getOperationsAfter(payload.boardId, payload.fromSeq, user.id);
           const response: OperationReplayResultPayload = {
             boardId: payload.boardId,
             fromSeq: payload.fromSeq,
@@ -304,7 +300,7 @@ export function initSocket(io: Server): void {
           ack?.(result);
           socket.emit("error", result.error);
         }
-      }
+      },
     );
 
     socket.on("cursor:update", async (rawPayload: unknown) => {
@@ -318,7 +314,7 @@ export function initSocket(io: Server): void {
           socket,
           `rate:board:${payload.boardId}:user:${user.id}:cursor`,
           30,
-          1_000
+          1_000,
         );
         if (rateLimited) {
           return;

@@ -1,25 +1,15 @@
+import { Loader2, Plus, Trash2, ExternalLink, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  createBoard,
-  listBoards,
-  deleteBoard,
-  logout,
-  type BoardListItem,
-} from "../lib/api";
-import { getStoredUser } from "../lib/auth";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2, Plus, Trash2, ExternalLink, LogOut } from "lucide-react";
-import { toast } from "sonner";
+
+import { createBoard, listBoards, deleteBoard, logout, type BoardListItem } from "../lib/api";
+import { getStoredUser } from "../lib/auth";
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -83,18 +73,14 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4 md:p-8">
-      <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] -z-10" />
+      <div className="bg-grid-slate-100 absolute inset-0 -z-10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
 
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="mx-auto max-w-4xl space-y-8">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <div className="text-left space-y-2">
-            <h1 className="text-4xl font-bold text-gray-900">
-              WhiteBoard 协作白板
-            </h1>
-            {user && (
-              <p className="text-sm text-gray-600">已登录：{user.username}</p>
-            )}
+          <div className="space-y-2 text-left">
+            <h1 className="text-4xl font-bold text-gray-900">WhiteBoard 协作白板</h1>
+            {user && <p className="text-sm text-gray-600">已登录：{user.username}</p>}
           </div>
           <Button
             variant="outline"
@@ -113,7 +99,7 @@ export function HomePage() {
         </div>
 
         {/* Create New Board */}
-        <Card className="shadow-xl border-border/50">
+        <Card className="border-border/50 shadow-xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-xl">新建白板</CardTitle>
             <CardDescription>创建一个新的白板</CardDescription>
@@ -133,11 +119,7 @@ export function HomePage() {
                 />
               </div>
               <div className="flex items-end">
-                <Button
-                  onClick={handleCreateBoard}
-                  disabled={isCreating}
-                  size="lg"
-                >
+                <Button onClick={handleCreateBoard} disabled={isCreating} size="lg">
                   {isCreating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -156,7 +138,7 @@ export function HomePage() {
         </Card>
 
         {/* Board List */}
-        <Card className="shadow-xl border-border/50">
+        <Card className="border-border/50 shadow-xl">
           <CardHeader>
             <CardTitle className="text-xl">白板创建记录</CardTitle>
             <CardDescription>之前创建的白板</CardDescription>
@@ -167,30 +149,24 @@ export function HomePage() {
                 <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
               </div>
             ) : boards.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                暂无白板 请创建新的白板
-              </div>
+              <div className="py-8 text-center text-gray-500">暂无白板 请创建新的白板</div>
             ) : (
               <div className="space-y-2">
                 {boards.map((board) => (
                   <div
                     key={board.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 cursor-pointer transition-colors group"
+                    className="group flex cursor-pointer items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
                     onClick={() => navigate(`/board/${board.id}`)}
                   >
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 truncate">
-                        {board.title}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        更新于 {formatDate(board.updatedAt)}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate font-medium text-gray-900">{board.title}</h3>
+                      <p className="text-sm text-gray-500">更新于 {formatDate(board.updatedAt)}</p>
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="ml-4 flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="opacity-0 transition-opacity group-hover:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
                           window.open(`/board/${board.id}`, "_blank");
@@ -201,7 +177,7 @@ export function HomePage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                        className="text-destructive opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                         onClick={(e) => handleDeleteBoard(board.id, e)}
                       >
                         <Trash2 className="h-4 w-4" />

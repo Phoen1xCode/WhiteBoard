@@ -1,29 +1,32 @@
-import * as React from "react"
-import { type VariantProps } from "class-variance-authority"
-import { cn } from "@/lib/utils"
-import { toggleVariants } from "@/components/ui/toggle"
+import { type VariantProps } from "class-variance-authority";
+import * as React from "react";
+
+import { toggleVariants } from "@/components/ui/toggle-variants";
+import { cn } from "@/lib/utils";
 
 const ToggleGroupContext = React.createContext<
   VariantProps<typeof toggleVariants> & {
-    value?: string
-    onValueChange?: (value: string) => void
-    type?: "single" | "multiple"
+    value?: string;
+    onValueChange?: (value: string) => void;
+    type?: "single" | "multiple";
   }
 >({
   size: "default",
   variant: "default",
-})
+});
 
 interface ToggleGroupProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof toggleVariants> {
-  type?: "single" | "multiple"
-  value?: string
-  onValueChange?: (value: string) => void
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof toggleVariants> {
+  type?: "single" | "multiple";
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
 const ToggleGroup = React.forwardRef<HTMLDivElement, ToggleGroupProps>(
-  ({ className, variant, size, children, type = "single", value, onValueChange, ...props }, ref) => (
+  (
+    { className, variant, size, children, type = "single", value, onValueChange, ...props },
+    ref,
+  ) => (
     <div
       ref={ref}
       role="group"
@@ -34,27 +37,26 @@ const ToggleGroup = React.forwardRef<HTMLDivElement, ToggleGroupProps>(
         {children}
       </ToggleGroupContext.Provider>
     </div>
-  )
-)
-ToggleGroup.displayName = "ToggleGroup"
+  ),
+);
+ToggleGroup.displayName = "ToggleGroup";
 
 interface ToggleGroupItemProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof toggleVariants> {
-  value: string
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof toggleVariants> {
+  value: string;
 }
 
 const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps>(
   ({ className, children, variant, size, value, onClick, ...props }, ref) => {
-    const context = React.useContext(ToggleGroupContext)
-    const isPressed = context.value === value
+    const context = React.useContext(ToggleGroupContext);
+    const isPressed = context.value === value;
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (context.type === "single") {
-        context.onValueChange?.(value)
+        context.onValueChange?.(value);
       }
-      onClick?.(e)
-    }
+      onClick?.(e);
+    };
 
     return (
       <button
@@ -69,16 +71,16 @@ const ToggleGroupItem = React.forwardRef<HTMLButtonElement, ToggleGroupItemProps
             variant: context.variant || variant,
             size: context.size || size,
           }),
-          className
+          className,
         )}
         onClick={handleClick}
         {...props}
       >
         {children}
       </button>
-    )
-  }
-)
-ToggleGroupItem.displayName = "ToggleGroupItem"
+    );
+  },
+);
+ToggleGroupItem.displayName = "ToggleGroupItem";
 
-export { ToggleGroup, ToggleGroupItem }
+export { ToggleGroup, ToggleGroupItem };

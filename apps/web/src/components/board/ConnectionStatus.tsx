@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
 import { Wifi, WifiOff, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+
 import {
   type ConnectionStatus,
   getConnectionStatus,
@@ -48,7 +49,7 @@ export function ConnectionStatus() {
 
   return (
     <div
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${config.className}`}
+      className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${config.className}`}
     >
       <Icon size={16} className={isAnimated ? "animate-spin" : ""} />
       <span>{config.label}</span>

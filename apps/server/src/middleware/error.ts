@@ -1,4 +1,5 @@
 import type { Middleware } from "koa";
+
 import { isAppError } from "../lib/app-error";
 import { failure } from "../lib/response";
 

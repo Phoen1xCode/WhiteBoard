@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
 import type { WhiteBoardElement, WhiteBoardOperation } from "@whiteboard/shared/types";
+
+import { describe, expect, it } from "vitest";
+
 import { replayOps, validateOperationPayload } from "./operation-service";
 
 const rect = (id: string, x = 0): WhiteBoardElement => ({
@@ -32,27 +34,20 @@ describe("replayOps", () => {
   });
 
   it("starts from snapshot elements", () => {
-    const state = replayOps(
-      { elements: [rect("base", 1)] },
-      [{ type: "update", boardId: "b1", elementId: "base", changes: { y: 8 } }]
-    );
+    const state = replayOps({ elements: [rect("base", 1)] }, [
+      { type: "update", boardId: "b1", elementId: "base", changes: { y: 8 } },
+    ]);
     expect(state.elements[0]).toMatchObject({ id: "base", x: 1, y: 8 });
   });
 });
 
 describe("validateOperationPayload", () => {
   it("accepts valid add and rejects board mismatch", () => {
-    const op = validateOperationPayload(
-      { type: "add", boardId: "b1", element: rect("e1") },
-      "b1"
-    );
+    const op = validateOperationPayload({ type: "add", boardId: "b1", element: rect("e1") }, "b1");
     expect(op.type).toBe("add");
 
     expect(() =>
-      validateOperationPayload(
-        { type: "add", boardId: "other", element: rect("e1") },
-        "b1"
-      )
+      validateOperationPayload({ type: "add", boardId: "other", element: rect("e1") }, "b1"),
     ).toThrow(/boardId mismatch/);
   });
 });

@@ -53,7 +53,7 @@ export async function findBoardById(id: string): Promise<Board | null> {
 
 /** Read snapshot + max(seq) under one row lock so lastSeq always matches snapshot. */
 export async function findBoardSnapshotWithSeq(
-  boardId: string
+  boardId: string,
 ): Promise<{ board: Board; lastSeq: number } | null> {
   return await prisma.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<
@@ -116,7 +116,7 @@ export async function listBoardsByUserId(userId: string): Promise<Board[]> {
 
 export async function updateBoardSnapshot(
   id: string,
-  snapshot: Prisma.InputJsonValue
+  snapshot: Prisma.InputJsonValue,
 ): Promise<Board> {
   return await prisma.board.update({
     where: { id },

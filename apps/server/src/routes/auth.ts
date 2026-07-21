@@ -1,10 +1,7 @@
 import Router from "@koa/router";
+import { loginBodySchema, refreshBodySchema, registerBodySchema } from "@whiteboard/shared/schemas";
 import { z } from "zod";
-import {
-  loginBodySchema,
-  refreshBodySchema,
-  registerBodySchema,
-} from "@whiteboard/shared/schemas";
+
 import * as authController from "../controllers/auth-controller";
 import { authMiddleware } from "../middleware/auth";
 import { getClientIp, rateLimit } from "../middleware/rate-limit";
@@ -37,23 +34,9 @@ export function createAuthRouter(): Router {
     validateBody(registerBodySchema),
     authController.register,
   );
-  router.post(
-    "/login",
-    loginRateLimit,
-    validateBody(loginBodySchema),
-    authController.login,
-  );
-  router.post(
-    "/refresh",
-    validateBody(refreshBodySchema),
-    authController.refresh,
-  );
-  router.post(
-    "/logout",
-    authMiddleware,
-    validateBody(logoutBodySchema),
-    authController.logout,
-  );
+  router.post("/login", loginRateLimit, validateBody(loginBodySchema), authController.login);
+  router.post("/refresh", validateBody(refreshBodySchema), authController.refresh);
+  router.post("/logout", authMiddleware, validateBody(logoutBodySchema), authController.logout);
   router.get("/me", authMiddleware, authController.me);
 
   return router;

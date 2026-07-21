@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { io as ioc, type Socket as ClientSocket } from "socket.io-client";
-import { resetRedisForTests } from "../lib/redis";
-import { signTokenPair } from "../lib/jwt";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { PermissionRole } from "../../prisma/generated/client";
+import { signTokenPair } from "../lib/jwt";
+import { resetRedisForTests } from "../lib/redis";
 
 const users = new Map<string, any>([
   [
@@ -46,14 +47,8 @@ const boards = new Map<string, any>([
 ]);
 
 const permissions = new Map<string, any>([
-  [
-    "board-1:user-1",
-    { boardId: "board-1", userId: "user-1", role: PermissionRole.OWNER },
-  ],
-  [
-    "board-1:viewer-1",
-    { boardId: "board-1", userId: "viewer-1", role: PermissionRole.VIEWER },
-  ],
+  ["board-1:user-1", { boardId: "board-1", userId: "user-1", role: PermissionRole.OWNER }],
+  ["board-1:viewer-1", { boardId: "board-1", userId: "viewer-1", role: PermissionRole.VIEWER }],
 ]);
 
 let seq = 0;
@@ -86,7 +81,7 @@ vi.mock("../repositories/operation-repository", () => ({
   commitOperationAtomic: async (input: any) => {
     if (input.clientOpId) {
       const existing = operations.find(
-        (o) => o.boardId === input.boardId && o.clientOpId === input.clientOpId
+        (o) => o.boardId === input.boardId && o.clientOpId === input.clientOpId,
       );
       if (existing) return { operation: existing, created: false };
     }
@@ -112,8 +107,7 @@ vi.mock("../repositories/operation-repository", () => ({
     return { operation: record, created: true };
   },
   findOperationByClientOpId: async (boardId: string, clientOpId: string) =>
-    operations.find((o) => o.boardId === boardId && o.clientOpId === clientOpId) ??
-    null,
+    operations.find((o) => o.boardId === boardId && o.clientOpId === clientOpId) ?? null,
   findOperationsAfter: async (boardId: string, fromSeq: number) =>
     operations.filter((o) => o.boardId === boardId && o.seq > fromSeq),
   findLatestOperationSeq: async () => seq || null,
@@ -220,7 +214,7 @@ describe("socket protocol", () => {
             },
           },
         },
-        resolve
+        resolve,
       );
     });
 
@@ -242,18 +236,14 @@ describe("socket protocol", () => {
             boardId: "board-1",
           },
         },
-        resolve
+        resolve,
       );
     });
     expect(viewerAck.ok).toBe(false);
     expect(viewerAck.error.code).toBe("FORBIDDEN");
 
     const replay = await new Promise<any>((resolve) => {
-      editor.emit(
-        "operation:replay",
-        { boardId: "board-1", fromSeq: 0 },
-        resolve
-      );
+      editor.emit("operation:replay", { boardId: "board-1", fromSeq: 0 }, resolve);
     });
     expect(replay.ok).toBe(true);
     expect(replay.operations).toHaveLength(1);
@@ -285,7 +275,7 @@ describe("socket protocol", () => {
             },
           },
         },
-        resolve
+        resolve,
       );
     });
     expect(idempotentAck.ok).toBe(true);

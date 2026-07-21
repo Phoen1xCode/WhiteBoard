@@ -1,13 +1,11 @@
 // 基于 Zustand + Immer 实现的实时协作白板状态管理
 
-import { create } from "zustand";
+import type { WhiteBoardElement, WhiteBoardOperation, ShapeType } from "@whiteboard/shared/types";
+
 import { produce } from "immer";
 import { nanoid } from "nanoid";
-import type {
-  WhiteBoardElement,
-  WhiteBoardOperation,
-  ShapeType,
-} from "@whiteboard/shared/types";
+import { create } from "zustand";
+
 import { isBoardReady, sendOperation, SocketCommitError } from "../lib/socket";
 
 // 绘制样式配置
@@ -26,7 +24,7 @@ type HistoryEntry = {
 
 function applyInverseToElements(
   draft: { elements: Record<string, WhiteBoardElement> },
-  inverse: WhiteBoardOperation
+  inverse: WhiteBoardOperation,
 ): void {
   switch (inverse.type) {
     case "add":
@@ -46,10 +44,7 @@ function applyInverseToElements(
   }
 }
 
-function rollbackLocal(
-  inverse: WhiteBoardOperation,
-  historyEntry: HistoryEntry | null
-): void {
+function rollbackLocal(inverse: WhiteBoardOperation, historyEntry: HistoryEntry | null): void {
   useWhiteboardStore.setState(
     produce((draft: State) => {
       applyInverseToElements(draft, inverse);
@@ -57,22 +52,18 @@ function rollbackLocal(
         draft.undoStack = draft.undoStack.filter((entry) => entry !== historyEntry);
         draft.redoStack = draft.redoStack.filter((entry) => entry !== historyEntry);
       }
-    })
+    }),
   );
 }
 
 function commitLocal(
   operation: WhiteBoardOperation,
   rollbackOp: WhiteBoardOperation | null,
-  historyEntry: HistoryEntry | null
+  historyEntry: HistoryEntry | null,
 ): void {
   void sendOperation(operation, nanoid()).catch((error) => {
     console.error("Failed to commit operation:", error);
-    if (
-      rollbackOp &&
-      error instanceof SocketCommitError &&
-      error.definitive
-    ) {
+    if (rollbackOp && error instanceof SocketCommitError && error.definitive) {
       rollbackLocal(rollbackOp, historyEntry);
     }
   });
@@ -100,7 +91,7 @@ type Actions = {
   setInitialElements: (elements: WhiteBoardElement[]) => void;
   applyOperation: (
     operation: WhiteBoardOperation,
-    options?: { local?: boolean; recordHistory?: boolean }
+    options?: { local?: boolean; recordHistory?: boolean },
   ) => void;
   setCurrentTool: (tool: ShapeType) => void; // 设置当前工具
   setCurrentStyle: (style: Partial<DrawingStyle>) => void; // 设置绘图样式
@@ -121,7 +112,7 @@ type Actions = {
  */
 function createInverseOperation(
   operation: WhiteBoardOperation,
-  elements: Record<string, WhiteBoardElement>
+  elements: Record<string, WhiteBoardElement>,
 ): WhiteBoardOperation | null {
   switch (operation.type) {
     case "add":
@@ -148,9 +139,7 @@ function createInverseOperation(
 
       // 存储变更属性的原始值
       const originalChanges: Partial<WhiteBoardElement> = {};
-      for (const key of Object.keys(
-        operation.changes,
-      ) as (keyof WhiteBoardElement)[]) {
+      for (const key of Object.keys(operation.changes) as (keyof WhiteBoardElement)[]) {
         Object.assign(originalChanges, { [key]: element[key] });
       }
       return {
@@ -231,10 +220,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
             break;
           case "update": // 更新现有元素属性
             if (draft.elements[operation.elementId]) {
-              Object.assign(
-                draft.elements[operation.elementId],
-                operation.changes
-              );
+              Object.assign(draft.elements[operation.elementId], operation.changes);
             }
             break;
           case "delete": // 删除元素
@@ -255,7 +241,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
           // 执行新操作时清空重做栈
           draft.redoStack = [];
         }
-      })
+      }),
     );
 
     // 本地操作提交到服务端（ack 后再由其他客户端收到 committed）
@@ -281,7 +267,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
     set(
       produce((draft: State) => {
         Object.assign(draft.currentStyle, style);
-      })
+      }),
     );
   },
 
@@ -303,7 +289,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
       // 应用删除操作
       get().applyOperation(
         { type: "delete", boardId, elementId: selectedElementId },
-        { local: true }
+        { local: true },
       );
       // 清除选中状态
       set({ selectedElementId: null });
@@ -330,7 +316,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
         // 将操作从撤销栈移到重做栈
         draft.undoStack.pop();
         draft.redoStack.push(entry);
-      })
+      }),
     );
 
     // 确保逆向操作使用正确的 boardId 并发送到其他客户端同步
@@ -375,7 +361,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
         // 将操作从重做栈移到撤销栈
         draft.redoStack.pop();
         draft.undoStack.push(entry);
-      })
+      }),
     );
 
     // 确保原始操作使用正确的 boardId 并发送到其他客户端同步

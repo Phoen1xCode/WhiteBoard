@@ -1,5 +1,6 @@
-import type { CursorInfo } from "../../hooks/useCursors";
 import { MousePointer } from "lucide-react";
+
+import type { CursorInfo } from "../../hooks/useCursors";
 
 interface CursorsProps {
   cursors: CursorInfo[];
@@ -7,7 +8,7 @@ interface CursorsProps {
 
 export function Cursors({ cursors }: CursorsProps) {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden z-50">
+    <div className="pointer-events-none absolute inset-0 z-50 overflow-hidden">
       {cursors.map((cursor) => (
         <div
           key={cursor.clientId}
@@ -29,7 +30,7 @@ export function Cursors({ cursors }: CursorsProps) {
           />
           {/* User label */}
           <div
-            className="absolute left-4 top-4 px-2 py-0.5 rounded text-xs font-medium text-white whitespace-nowrap"
+            className="absolute top-4 left-4 rounded px-2 py-0.5 text-xs font-medium whitespace-nowrap text-white"
             style={{ backgroundColor: cursor.color }}
           >
             User {cursor.clientId.slice(-4)}

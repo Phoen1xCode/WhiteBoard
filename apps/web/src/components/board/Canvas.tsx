@@ -1,8 +1,3 @@
-import Konva from "konva";
-import { Stage, Layer, Line, Rect, Circle, Transformer } from "react-konva";
-import { useState, useMemo, useRef, useEffect } from "react";
-import { nanoid } from "nanoid";
-import { useWhiteboardStore } from "../../store/whiteboardStore";
 import type {
   WhiteBoardElement,
   RectangleElement,
@@ -10,6 +5,13 @@ import type {
   LineElement,
   FreehandElement,
 } from "@whiteboard/shared/types";
+
+import Konva from "konva";
+import { nanoid } from "nanoid";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { Stage, Layer, Line, Rect, Circle, Transformer } from "react-konva";
+
+import { useWhiteboardStore } from "../../store/whiteboardStore";
 
 interface Props {
   boardId: string;
@@ -23,21 +25,12 @@ export function Canvas({ boardId, width, height }: Props) {
   const currentStyle = useWhiteboardStore((s) => s.currentStyle);
   const applyOperation = useWhiteboardStore((s) => s.applyOperation);
   const selectedElementId = useWhiteboardStore((s) => s.selectedElementId);
-  const setSelectedElementId = useWhiteboardStore(
-    (s) => s.setSelectedElementId
-  );
-  const elements = useMemo(
-    () => Object.values(elementsRecord),
-    [elementsRecord]
-  );
+  const setSelectedElementId = useWhiteboardStore((s) => s.setSelectedElementId);
+  const elements = useMemo(() => Object.values(elementsRecord), [elementsRecord]);
 
   const [isDrawing, setIsDrawing] = useState(false);
-  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
-    null
-  );
-  const [currentShape, setCurrentShape] = useState<WhiteBoardElement | null>(
-    null
-  );
+  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [currentShape, setCurrentShape] = useState<WhiteBoardElement | null>(null);
   const [isErasing, setIsErasing] = useState(false);
   const erasedElementsRef = useRef<Set<string>>(new Set());
 
@@ -48,9 +41,7 @@ export function Canvas({ boardId, width, height }: Props) {
   // 当选中元素改变时，更新 Transformer
   useEffect(() => {
     if (transformerRef.current) {
-      const selectedNode = selectedElementId
-        ? shapeRefs.current.get(selectedElementId)
-        : null;
+      const selectedNode = selectedElementId ? shapeRefs.current.get(selectedElementId) : null;
 
       if (selectedNode) {
         transformerRef.current.nodes([selectedNode]);
@@ -251,10 +242,7 @@ export function Canvas({ boardId, width, height }: Props) {
       }
     }
 
-    applyOperation(
-      { type: "add", boardId, element: currentShape },
-      { local: true }
-    );
+    applyOperation({ type: "add", boardId, element: currentShape }, { local: true });
     setIsDrawing(false);
     setStartPos(null);
     setCurrentShape(null);
@@ -291,10 +279,7 @@ export function Canvas({ boardId, width, height }: Props) {
       };
     }
 
-    applyOperation(
-      { type: "update", boardId, elementId: el.id, changes },
-      { local: true }
-    );
+    applyOperation({ type: "update", boardId, elementId: el.id, changes }, { local: true });
   }
 
   // 渲染单个元素
@@ -329,7 +314,7 @@ export function Canvas({ boardId, width, height }: Props) {
                   elementId: el.id,
                   changes: { x: e.target.x(), y: e.target.y() },
                 },
-                { local: true }
+                { local: true },
               );
             }}
           />
@@ -364,7 +349,7 @@ export function Canvas({ boardId, width, height }: Props) {
                   elementId: el.id,
                   changes: { x: e.target.x(), y: e.target.y() },
                 },
-                { local: true }
+                { local: true },
               );
             }}
             onTransformEnd={() => handleTransformEnd(el)}
@@ -399,7 +384,7 @@ export function Canvas({ boardId, width, height }: Props) {
                   elementId: el.id,
                   changes: { x: e.target.x(), y: e.target.y() },
                 },
-                { local: true }
+                { local: true },
               );
             }}
             onTransformEnd={() => handleTransformEnd(el)}
@@ -433,7 +418,7 @@ export function Canvas({ boardId, width, height }: Props) {
                   elementId: el.id,
                   changes: { x: e.target.x(), y: e.target.y() },
                 },
-                { local: true }
+                { local: true },
               );
             }}
           />
@@ -460,8 +445,8 @@ export function Canvas({ boardId, width, height }: Props) {
           currentTool === "eraser"
             ? "crosshair"
             : currentTool === "select"
-            ? "default"
-            : "crosshair",
+              ? "default"
+              : "crosshair",
       }}
     >
       <Layer>

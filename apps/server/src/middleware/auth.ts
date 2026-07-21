@@ -1,10 +1,14 @@
-import "dotenv/config";
-import koaJwt from "koa-jwt";
 import type { Middleware } from "koa";
+
+import koaJwt from "koa-jwt";
+
+import type { AuthenticatedUser, JwtTokenPayload } from "../types/auth";
+
 import { AppError } from "../lib/app-error";
 import { isTokenBlacklisted } from "../lib/token-blacklist";
 import { findUserById } from "../repositories/user-repository";
-import type { AuthenticatedUser, JwtTokenPayload } from "../types/auth";
+
+import "dotenv/config";
 
 function getAccessSecret(): string {
   const secret = process.env.JWT_ACCESS_SECRET;

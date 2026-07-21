@@ -1,5 +1,7 @@
+import { Home } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
 import {
   Canvas,
   Toolbar,
@@ -10,9 +12,8 @@ import {
   Cursors,
 } from "../components";
 import { useBoardSync } from "../hooks/useBoardSync";
-import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCursors } from "../hooks/useCursors";
-import { Home } from "lucide-react";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();
@@ -55,14 +56,14 @@ export function BoardPage() {
 
   if (!boardId) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-red-500 font-medium">Invalid board ID</p>
+      <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
+        <p className="font-medium text-red-500">Invalid board ID</p>
       </div>
     );
   }
 
   return (
-    <div className="w-screen h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50">
       {/* Minimal header */}
       <header className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <ConnectionStatus />
@@ -73,7 +74,7 @@ export function BoardPage() {
       <div className="absolute top-4 left-4 z-20">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-md border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-700 shadow-md transition-colors hover:bg-gray-50"
         >
           <Home size={16} />
           <span className="text-sm font-medium">Home</span>
@@ -83,7 +84,7 @@ export function BoardPage() {
       {/* Canvas area */}
       <main
         ref={containerRef}
-        className="flex-1 relative"
+        className="relative flex-1"
         onMouseMove={handleMouseMove}
         style={{
           backgroundImage: `
@@ -93,11 +94,7 @@ export function BoardPage() {
           backgroundColor: "#f9fafb",
         }}
       >
-        <Canvas
-          boardId={boardId}
-          width={dimensions.width}
-          height={dimensions.height}
-        />
+        <Canvas boardId={boardId} width={dimensions.width} height={dimensions.height} />
         <Cursors cursors={cursors} />
         <Toolbar boardId={boardId} />
         <StylePanel />

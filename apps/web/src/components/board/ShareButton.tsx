@@ -1,7 +1,8 @@
-import { useState } from "react";
 import { Share2, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 
 interface ShareButtonProps {
   boardId: string;
@@ -25,11 +26,7 @@ export function ShareButton({ boardId }: ShareButtonProps) {
   }
 
   return (
-    <Button
-      onClick={handleShare}
-      className="gap-2"
-      variant={copied ? "secondary" : "default"}
-    >
+    <Button onClick={handleShare} className="gap-2" variant={copied ? "secondary" : "default"}>
       {copied ? (
         <>
           <Check size={18} />

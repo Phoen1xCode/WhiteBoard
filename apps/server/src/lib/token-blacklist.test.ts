@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+
 import { resetRedisForTests } from "./redis";
 import { blacklistToken, isTokenBlacklisted } from "./token-blacklist";
 

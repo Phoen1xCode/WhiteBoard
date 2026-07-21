@@ -1,5 +1,6 @@
-import { PermissionRole, type Board, type Permission } from "../../prisma/generated/client";
 import type { WhiteBoardSnapshot, WhiteBoardElement } from "@whiteboard/shared/types";
+
+import { PermissionRole, type Board, type Permission } from "../../prisma/generated/client";
 import { AppError } from "../lib/app-error";
 import * as boardRepository from "../repositories/board-repository";
 import { findPermission } from "../repositories/permission-repository";
@@ -48,7 +49,7 @@ function isEditRole(role: PermissionRole): boolean {
 
 async function findBoardPermission(
   boardId: string,
-  userId: string
+  userId: string,
 ): Promise<{ board: Board; permission: Permission }> {
   const board = await boardRepository.findBoardById(boardId);
 
@@ -90,10 +91,7 @@ async function requireOwnerPermission(boardId: string, userId: string): Promise<
   return board;
 }
 
-export async function createBoard(
-  title: string,
-  userId: string
-): Promise<BoardSnapshotWithSeq> {
+export async function createBoard(title: string, userId: string): Promise<BoardSnapshotWithSeq> {
   const result = await boardRepository.createBoardWithOwner({
     title,
     snapshot: { elements: [] },
@@ -103,10 +101,7 @@ export async function createBoard(
   return toWhiteBoardSnapshot(result.id);
 }
 
-export async function getBoard(
-  id: string,
-  userId: string
-): Promise<BoardSnapshotWithSeq> {
+export async function getBoard(id: string, userId: string): Promise<BoardSnapshotWithSeq> {
   await assertCanAccessBoard(id, userId);
   return toWhiteBoardSnapshot(id);
 }
@@ -114,7 +109,7 @@ export async function getBoard(
 export async function updateBoardTitle(
   id: string,
   title: string,
-  userId: string
+  userId: string,
 ): Promise<BoardSnapshotWithSeq> {
   await assertCanEditBoard(id, userId);
   await boardRepository.updateBoardTitle(id, title);

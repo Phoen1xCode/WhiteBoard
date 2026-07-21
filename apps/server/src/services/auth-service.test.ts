@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { resetRedisForTests } from "../lib/redis";
 
 const users = new Map<string, any>();
@@ -9,11 +10,7 @@ vi.mock("../repositories/user-repository", () => ({
   findUserByUsername: async (username: string) =>
     [...users.values()].find((u) => u.username === username) ?? null,
   findUserById: async (id: string) => users.get(id) ?? null,
-  createUser: async (input: {
-    email: string;
-    username: string;
-    passwordHash: string;
-  }) => {
+  createUser: async (input: { email: string; username: string; passwordHash: string }) => {
     const user = {
       id: `user-${users.size + 1}`,
       email: input.email,
@@ -27,8 +24,8 @@ vi.mock("../repositories/user-repository", () => ({
   },
 }));
 
-import { getMe, login, logout, refresh, register } from "./auth-service";
 import { verifyAccessToken } from "../lib/jwt";
+import { getMe, login, logout, refresh, register } from "./auth-service";
 
 describe("auth service", () => {
   beforeEach(() => {
@@ -64,7 +61,7 @@ describe("auth service", () => {
     });
 
     await expect(
-      login({ email: "b@example.com", password: "wrong-password" })
+      login({ email: "b@example.com", password: "wrong-password" }),
     ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS", status: 401 });
   });
 
@@ -81,9 +78,9 @@ describe("auth service", () => {
       refreshToken: registered.tokens.refreshToken,
     });
 
-    await expect(
-      refresh({ refreshToken: registered.tokens.refreshToken })
-    ).rejects.toMatchObject({ status: 401 });
+    await expect(refresh({ refreshToken: registered.tokens.refreshToken })).rejects.toMatchObject({
+      status: 401,
+    });
 
     const again = await login({
       email: "c@example.com",

@@ -1,15 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { PermissionRole } from "../../prisma/generated/client";
 
 const boards = new Map<string, any>();
 const permissions = new Map<string, any>();
 
 vi.mock("../repositories/board-repository", () => ({
-  createBoardWithOwner: async (input: {
-    title: string;
-    snapshot: unknown;
-    ownerId: string;
-  }) => {
+  createBoardWithOwner: async (input: { title: string; snapshot: unknown; ownerId: string }) => {
     const board = {
       id: `board-${boards.size + 1}`,
       title: input.title,
@@ -34,7 +31,7 @@ vi.mock("../repositories/board-repository", () => ({
   },
   listBoardsByUserId: async (userId: string) =>
     [...boards.values()].filter((b) =>
-      [...permissions.values()].some((p) => p.boardId === b.id && p.userId === userId)
+      [...permissions.values()].some((p) => p.boardId === b.id && p.userId === userId),
     ),
   updateBoardTitle: async (id: string, title: string) => {
     const board = boards.get(id);
@@ -54,12 +51,7 @@ vi.mock("../repositories/permission-repository", () => ({
     permissions.get(`${boardId}:${userId}`) ?? null,
 }));
 
-import {
-  assertCanEditBoard,
-  createBoard,
-  deleteBoard,
-  getBoard,
-} from "./boardsService";
+import { assertCanEditBoard, createBoard, deleteBoard, getBoard } from "./boardsService";
 
 describe("board permissions", () => {
   beforeEach(() => {

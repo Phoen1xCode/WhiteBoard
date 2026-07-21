@@ -1,13 +1,6 @@
 // packages/shared/src/types/whiteboard.ts
 
-export type ShapeType =
-  | "freehand"
-  | "rectangle"
-  | "circle"
-  | "line"
-  | "text"
-  | "select"
-  | "eraser";
+export type ShapeType = "freehand" | "rectangle" | "circle" | "line" | "text" | "select" | "eraser";
 
 export interface BaseElement {
   id: string;
@@ -46,11 +39,7 @@ export interface LineElement extends BaseElement {
   points: number[]; // [x1, y1, x2, y2]
 }
 
-export type WhiteBoardElement =
-  | FreehandElement
-  | RectangleElement
-  | CircleElement
-  | LineElement;
+export type WhiteBoardElement = FreehandElement | RectangleElement | CircleElement | LineElement;
 
 export interface WhiteBoard {
   id: string;

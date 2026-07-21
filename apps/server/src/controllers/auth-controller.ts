@@ -1,9 +1,11 @@
 import type { Context } from "koa";
+
+import type { JwtTokenPayload } from "../types/auth";
+
 import { AppError } from "../lib/app-error";
 import { success } from "../lib/response";
 import * as authService from "../services/auth-service";
 import { disconnectUserSockets } from "../sockets/socket";
-import type { JwtTokenPayload } from "../types/auth";
 
 interface RequestWithBody<TBody> {
   body: TBody;
