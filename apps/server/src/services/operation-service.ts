@@ -7,8 +7,8 @@ import type {
 import { AppError } from "../lib/app-error";
 import * as boardRepository from "../repositories/board-repository";
 import {
-  createOperation,
-  findLatestOperationSeq,
+  createOperationWithNextSeq,
+  findOperationByClientOpId,
   findOperationsAfter,
 } from "../repositories/operation-repository";
 import { findLatestSnapshotByBoardId } from "../repositories/snapshot-repository";
@@ -21,7 +21,7 @@ export interface BoardState {
 export interface CommitOperationInput {
   boardId: string;
   operation: WhiteBoardOperation;
-  userId?: string | null;
+  userId: string;
   clientOpId?: string | null;
 }
 
@@ -202,33 +202,28 @@ export function replayOps(snapshot: BoardState, operations: WhiteBoardOperation[
   return { elements: Object.values(elementsMap) };
 }
 
-async function getNextSeq(boardId: string): Promise<number> {
-  const latestSeq = await findLatestOperationSeq(boardId);
-  return (latestSeq ?? 0) + 1;
-}
-
 export async function commitOperation(
   input: CommitOperationInput
 ): Promise<CommittedOperation> {
   const operation = validateOperationPayload(input.operation, input.boardId);
-  const board = input.userId
-    ? await assertCanEditBoard(input.boardId, input.userId)
-    : await boardRepository.findBoardById(input.boardId);
+  const board = await assertCanEditBoard(input.boardId, input.userId);
 
-  if (!board) {
-    throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
+  if (input.clientOpId) {
+    const existing = await findOperationByClientOpId(input.boardId, input.clientOpId);
+    if (existing) {
+      return operationToRecord(existing);
+    }
   }
 
-  const seq = await getNextSeq(input.boardId);
-  const record = await createOperation({
+  const record = await createOperationWithNextSeq({
     boardId: input.boardId,
-    userId: input.userId ?? null,
-    seq,
+    userId: input.userId,
     opType: operation.type,
     elementId: getElementId(operation),
     clientOpId: input.clientOpId ?? null,
     payload: operation as unknown as Prisma.InputJsonValue,
   });
+
   const currentState = { elements: getSnapshotElements(board.snapshot) };
   const nextState = replayOps(currentState, [operation]);
 
@@ -242,28 +237,18 @@ export async function commitOperation(
 export async function getOperationsAfter(
   boardId: string,
   fromSeq: number,
-  userId?: string
+  userId: string
 ): Promise<CommittedOperation[]> {
-  if (userId) {
-    await assertCanAccessBoard(boardId, userId);
-  }
-
+  await assertCanAccessBoard(boardId, userId);
   const operations = await findOperationsAfter(boardId, fromSeq);
   return operations.map(operationToRecord);
 }
 
 export async function replayBoard(
   boardId: string,
-  userId?: string
+  userId: string
 ): Promise<WhiteBoardSnapshot> {
-  const board = userId
-    ? await assertCanAccessBoard(boardId, userId)
-    : await boardRepository.findBoardById(boardId);
-
-  if (!board) {
-    throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
-  }
-
+  const board = await assertCanAccessBoard(boardId, userId);
   const latestSnapshot = await findLatestSnapshotByBoardId(boardId);
   const operations = await findOperationsAfter(boardId, latestSnapshot?.seq ?? 0);
   const operationPayloads = operations.map((operation) =>

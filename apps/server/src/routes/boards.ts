@@ -1,20 +1,13 @@
 import Router from "@koa/router";
 import type { Context } from "koa";
-import { z } from "zod";
+import {
+  createBoardBodySchema,
+  updateBoardTitleBodySchema,
+} from "@whiteboard/shared/schemas";
 import * as boardsController from "../controllers/boardsController";
 import { authMiddleware } from "../middleware/auth";
 import { getClientIp, rateLimit } from "../middleware/rate-limit";
 import { validateBody } from "../middleware/validate";
-
-const createBoardBodySchema = z
-  .object({
-    title: z.string().min(1).max(100).optional(),
-  })
-  .default({});
-
-const updateBoardTitleBodySchema = z.object({
-  title: z.string().min(1).max(100),
-});
 
 function getBoardCreateRateLimitKey(ctx: Context): string {
   return ctx.state.user?.id ?? getClientIp(ctx);
