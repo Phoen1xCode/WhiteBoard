@@ -1,0 +1,24 @@
+{
+  "$schema": "../../node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["dist/**", "node_modules/**"],
+  "sortImports": {
+    "internalPattern": ["@/", "~/", "#"],
+    "newlinesBetween": true,
+    "groups": [
+      "type-import",
+      ["value-builtin", "value-external"],
+      "type-internal",
+      "value-internal",
+      ["type-parent", "type-sibling", "type-index"],
+      ["value-parent", "value-sibling", "value-index"],
+      "side_effect",
+      "side_effect_style",
+      "style",
+      "unknown"
+    ]
+  },
+  "sortTailwindcss": {
+    "stylesheet": "./src/styles/style.css",
+    "functions": ["clsx", "cn", "cva"]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn"],
+  "ignorePatterns": ["**/dist/**", "**/node_modules/**", "**/generated/**", "**/.prisma/**"],
+  "categories": {
+    "correctness": "error"
+  },
+  "overrides": [
+    {
+      "files": ["apps/web/**/*.{ts,tsx}"],
+      "plugins": ["typescript", "react", "import", "unicorn"],
+      "env": {
+        "browser": true
+      },
+      "rules": {
+        "react/react-in-jsx-scope": "off",
+        "react/only-export-components": ["warn", { "allowConstantExport": true }]
+      }
+    },
+    {
+      "files": ["apps/server/**/*.{ts,js}"],
+      "plugins": ["typescript", "import", "unicorn", "node"],
+      "env": {
+        "node": true
+      }
+    }
+  ]
+}
