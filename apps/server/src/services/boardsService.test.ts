@@ -27,6 +27,11 @@ vi.mock("../repositories/board-repository", () => ({
     return board;
   },
   findBoardById: async (id: string) => boards.get(id) ?? null,
+  findBoardSnapshotWithSeq: async (id: string) => {
+    const board = boards.get(id);
+    if (!board) return null;
+    return { board, lastSeq: 0 };
+  },
   listBoardsByUserId: async (userId: string) =>
     [...boards.values()].filter((b) =>
       [...permissions.values()].some((p) => p.boardId === b.id && p.userId === userId)
@@ -47,10 +52,6 @@ vi.mock("../repositories/board-repository", () => ({
 vi.mock("../repositories/permission-repository", () => ({
   findPermission: async (boardId: string, userId: string) =>
     permissions.get(`${boardId}:${userId}`) ?? null,
-}));
-
-vi.mock("../repositories/operation-repository", () => ({
-  findLatestOperationSeq: async () => 0,
 }));
 
 import {

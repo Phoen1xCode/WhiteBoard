@@ -268,7 +268,9 @@ export function initSocket(io: Server): void {
           };
 
           ack?.(ackPayload);
-          socket.to(roomName(payload.boardId)).emit("operation:committed", operationPayload);
+          if (committed.created) {
+            socket.to(roomName(payload.boardId)).emit("operation:committed", operationPayload);
+          }
         } catch (error) {
           const result = mapError(error);
           ack?.(result);

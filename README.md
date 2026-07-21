@@ -404,70 +404,61 @@ type ConnectionStatus =
 
 **2. WebSocket 事件系统**
 
-基于 Socket.IO 实现的实时通信协议：
+基于 Socket.IO；握手通过 `auth.token`（JWT access）。房间名 `board:{boardId}`。
 
 **客户端 → 服务器：**
 
-| 事件          | 数据                  | 功能         |
-| ------------- | --------------------- | ------------ |
-| `join-board`  | `{ boardId }`         | 加入白板房间 |
-| `leave-board` | `{ boardId }`         | 离开白板房间 |
-| `op`          | `WhiteBoardOperation` | 发送操作     |
-| `cursor`      | `{ boardId, x, y }`   | 发送光标位置 |
+| 事件 | 数据 | 功能 |
+| --- | --- | --- |
+| `board:join` | `{ boardId }` | 加入白板房间 |
+| `board:leave` | `{ boardId }` | 离开白板房间 |
+| `operation:commit` | `{ boardId, operation, clientOpId? }` | 提交操作（ack） |
+| `operation:replay` | `{ boardId, fromSeq }` | 拉取 `seq > fromSeq` |
+| `cursor:update` | `{ boardId, x, y }` | 发送光标 |
 
 **服务器 → 客户端：**
 
-| 事件     | 数据                  | 功能             |
-| -------- | --------------------- | ---------------- |
-| `op`     | `WhiteBoardOperation` | 接收其他用户操作 |
-| `cursor` | `{ clientId, x, y }`  | 接收其他用户光标 |
+| 事件 | 数据 | 功能 |
+| --- | --- | --- |
+| `board:joined` / ack | members 等 | join 成功 |
+| `board:user-joined` / `board:user-left` | user / socketId | 成员变更 |
+| `operation:committed` | 含 `seq` 的已提交 op | 广播给房间其他人 |
+| `operation:replayed` / ack | ops 列表 | 断线补齐 |
+| `cursor:updated` | userId, x, y… | 他人光标 |
 
-**3. 房间隔离机制**
+**3. operation:commit 路径**
 
-使用 Socket.IO 的房间（Room）功能实现多白板隔离：
+`authorize → persist（boardId+seq 原子写入 + snapshot）→ ack 提交者 → broadcast 其他人`。
 
-```typescript
-// 客户端加入房间
-socket.join(boardId);
+幂等 `clientOpId` 命中时只 ack，不重复广播。
 
-// 广播给房间内其他客户端
-socket.to(boardId).emit("op", operation);
-```
+**4. 数据与重连**
 
-**4. 数据持久化策略**
+- `Board.snapshot` 与 op log 在同一事务更新；`getBoard` 在行锁下原子读 snapshot + `lastSeq`
+- 客户端用 `lastSeq` 做 `operation:replay`，只补 `seq > lastSeq`
 
-采用 **快照 + 实时持久化** 的混合策略：
-
-- **快照存储**：完整的白板状态存储在 `Board.snapshot` JSON 字段
-- **实时持久化**：每个操作在转发给其他客户端的同时，异步持久化到数据库
-- **错误处理**：持久化失败不影响实时协作，仅记录错误日志
-
-```typescript
-// 操作持久化流程
-socket.on("op", async (operation) => {
-  // 1. 立即转发给其他客户端（优先保证实时性）
-  socket.to(boardId).emit("op", operation);
-
-  // 2. 异步持久化到数据库
-  try {
-    await applyOperationToSnapshot(boardId, operation);
-  } catch (error) {
-    console.error("Failed to persist operation:", error);
-  }
-});
-```
-
-#### 数据库设计
-
-**Board 表结构：**
+#### 数据库设计（核心）
 
 ```prisma
 model Board {
   id        String   @id @default(cuid())
   title     String
   snapshot  Json     // { elements: [...] }
+  ownerId   String?
+  // permissions / operations / snapshots 关系略
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Operation {
+  id         String  @id @default(cuid())
+  boardId    String
+  seq        Int
+  opType     String
+  clientOpId String?
+  payload    Json
+  @@unique([boardId, seq])
+  @@unique([boardId, clientOpId])
 }
 ```
 

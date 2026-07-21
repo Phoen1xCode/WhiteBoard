@@ -10,9 +10,38 @@ import type {
 } from "@whiteboard/shared/types";
 import { sendOperation } from "../lib/socket";
 
-function commitLocal(operation: WhiteBoardOperation): void {
+function rollbackLocal(inverse: WhiteBoardOperation): void {
+  useWhiteboardStore.setState(
+    produce((draft: State) => {
+      switch (inverse.type) {
+        case "add":
+          draft.elements[inverse.element.id] = inverse.element;
+          break;
+        case "update":
+          if (draft.elements[inverse.elementId]) {
+            Object.assign(draft.elements[inverse.elementId], inverse.changes);
+          }
+          break;
+        case "delete":
+          delete draft.elements[inverse.elementId];
+          break;
+        case "clear":
+          draft.elements = {};
+          break;
+      }
+    })
+  );
+}
+
+function commitLocal(
+  operation: WhiteBoardOperation,
+  inverse: WhiteBoardOperation | null
+): void {
   void sendOperation(operation, nanoid()).catch((error) => {
     console.error("Failed to commit operation:", error);
+    if (inverse) {
+      rollbackLocal(inverse);
+    }
   });
 }
 
@@ -207,7 +236,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
 
     // 本地操作提交到服务端（ack 后再由其他客户端收到 committed）
     if (local) {
-      commitLocal(operation);
+      commitLocal(operation, historyEntry?.inverse ?? null);
     }
   },
 
@@ -301,7 +330,8 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
 
     // 确保逆向操作使用正确的 boardId 并发送到其他客户端同步
     const syncedInverse = { ...entry.inverse, boardId };
-    commitLocal(syncedInverse);
+    const syncedOperation = { ...entry.operation, boardId };
+    commitLocal(syncedInverse, syncedOperation);
   },
 
   /**
@@ -344,7 +374,8 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
 
     // 确保原始操作使用正确的 boardId 并发送到其他客户端同步
     const syncedOperation = { ...entry.operation, boardId };
-    commitLocal(syncedOperation);
+    const syncedInverse = { ...entry.inverse, boardId };
+    commitLocal(syncedOperation, syncedInverse);
   },
 
   /**
