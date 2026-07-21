@@ -7,12 +7,17 @@ import type {
   OperationAckPayload,
   OperationReplayResultPayload,
 } from "@whiteboard/shared/types/socket";
+import { refreshAccessToken } from "./api";
 import { getAccessToken } from "./auth";
 
 type StatusChangeHandler = (status: ConnectionStatus) => void;
 type OperationHandler = (operation: WhiteBoardOperation, seq: number) => void;
 type CursorHandler = (data: CursorData) => void;
 type AckHandler = (ack: OperationAckPayload) => void;
+type ReadyWaiter = {
+  resolve: () => void;
+  reject: (error: Error) => void;
+};
 
 export type ConnectionStatus =
   | "connecting"
@@ -36,6 +41,9 @@ let operationHandlers: OperationHandler[] = [];
 let cursorHandlers: CursorHandler[] = [];
 let ackHandlers: AckHandler[] = [];
 let currentStatus: ConnectionStatus = "disconnected";
+let isBoardJoined = false;
+let readyWaiters: ReadyWaiter[] = [];
+let authRefreshInFlight: Promise<string | null> | null = null;
 
 function setStatus(status: ConnectionStatus) {
   currentStatus = status;
@@ -44,6 +52,35 @@ function setStatus(status: ConnectionStatus) {
 
 function getUrl(): string {
   return import.meta.env.VITE_WS_URL ?? "http://localhost:4000";
+}
+
+function waitUntilBoardJoined(): Promise<void> {
+  if (isBoardJoined) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    readyWaiters.push({ resolve, reject });
+  });
+}
+
+function markBoardJoined(): void {
+  isBoardJoined = true;
+  const waiters = readyWaiters;
+  readyWaiters = [];
+  waiters.forEach((waiter) => waiter.resolve());
+}
+
+function markBoardLeft(): void {
+  isBoardJoined = false;
+}
+
+function failBoardReady(reason: string): void {
+  isBoardJoined = false;
+  const error = new Error(reason);
+  const waiters = readyWaiters;
+  readyWaiters = [];
+  waiters.forEach((waiter) => waiter.reject(error));
 }
 
 export function getConnectionStatus(): ConnectionStatus {
@@ -73,13 +110,23 @@ export function offStatusChange(handler: StatusChangeHandler) {
 function wireSocketEvents(next: Socket) {
   next.on("connect", async () => {
     setStatus("connected");
-    if (currentBoardId) {
+    if (!currentBoardId) {
+      markBoardJoined();
+      return;
+    }
+
+    try {
       await joinBoard(currentBoardId);
       await requestReplay(currentBoardId, lastConfirmedSeq);
+      markBoardJoined();
+    } catch (error) {
+      failBoardReady(error instanceof Error ? error.message : "Failed to join board");
+      console.error("Failed to join board after connect:", error);
     }
   });
 
   next.on("disconnect", () => {
+    markBoardLeft();
     setStatus("disconnected");
   });
 
@@ -92,7 +139,27 @@ function wireSocketEvents(next: Socket) {
   });
 
   next.on("reconnect_failed", () => {
+    failBoardReady("Reconnect failed");
     setStatus("disconnected");
+  });
+
+  next.on("connect_error", async (error) => {
+    if (error.message !== "UNAUTHORIZED") {
+      return;
+    }
+
+    if (!authRefreshInFlight) {
+      authRefreshInFlight = refreshAccessToken().finally(() => {
+        authRefreshInFlight = null;
+      });
+    }
+
+    const token = await authRefreshInFlight;
+    if (!token) {
+      failBoardReady("Unauthorized");
+      next.disconnect();
+      setStatus("disconnected");
+    }
   });
 
   next.on("operation:committed", (payload: CommittedOperationPayload) => {
@@ -114,8 +181,7 @@ function wireSocketEvents(next: Socket) {
 }
 
 export function connect(boardId: string) {
-  const token = getAccessToken();
-  if (!token) {
+  if (!getAccessToken()) {
     setStatus("disconnected");
     throw new Error("Not authenticated");
   }
@@ -127,10 +193,13 @@ export function connect(boardId: string) {
   }
 
   currentBoardId = boardId;
+  markBoardLeft();
   setStatus("connecting");
 
   socket = io(getUrl(), {
-    auth: { token },
+    auth: (cb) => {
+      cb({ token: getAccessToken() ?? "" });
+    },
     reconnection: true,
     reconnectionAttempts: 10,
     reconnectionDelay: 1000,
@@ -176,7 +245,6 @@ export async function requestReplay(boardId: string, fromSeq: number): Promise<v
     throw new Error(result.error.message);
   }
 
-  // ack path also delivers ops; event path handled in wireSocketEvents
   for (const op of result.operations) {
     setLastConfirmedSeq(op.seq);
     operationHandlers.forEach((handler) => handler(op.payload, op.seq));
@@ -190,6 +258,7 @@ export function disconnect(boardId: string) {
   socket.disconnect();
   socket = null;
   currentBoardId = null;
+  failBoardReady("Socket disconnected");
   setStatus("disconnected");
 }
 
@@ -197,8 +266,10 @@ export async function sendOperation(
   operation: WhiteBoardOperation,
   clientOpId: string
 ): Promise<OperationAckPayload> {
-  if (!socket?.connected) {
-    throw new Error("Socket is not connected");
+  await waitUntilBoardJoined();
+
+  if (!socket?.connected || !isBoardJoined) {
+    throw new Error("Socket is not joined");
   }
 
   const result = await emitWithAck<OperationAckPayload>("operation:commit", {
@@ -233,6 +304,7 @@ export function offAck(handler: AckHandler) {
 }
 
 export function sendCursor(boardId: string, x: number, y: number) {
+  if (!isBoardJoined) return;
   socket?.emit("cursor:update", { boardId, x, y });
 }
 

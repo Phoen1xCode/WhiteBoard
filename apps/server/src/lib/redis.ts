@@ -107,7 +107,15 @@ class MemoryRedis implements RedisLike {
 }
 
 function getRedisUrl(): string {
-  return process.env.REDIS_URL ?? "memory://";
+  if (process.env.REDIS_URL) {
+    return process.env.REDIS_URL;
+  }
+
+  if (process.env.NODE_ENV === "test") {
+    return "memory://";
+  }
+
+  throw new Error("REDIS_URL is not set");
 }
 
 export function getRedis(): RedisLike {

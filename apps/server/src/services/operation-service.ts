@@ -5,10 +5,8 @@ import type {
   WhiteBoardSnapshot,
 } from "@whiteboard/shared/types";
 import { AppError } from "../lib/app-error";
-import * as boardRepository from "../repositories/board-repository";
 import {
-  createOperationWithNextSeq,
-  findOperationByClientOpId,
+  commitOperationAtomic,
   findOperationsAfter,
 } from "../repositories/operation-repository";
 import { findLatestSnapshotByBoardId } from "../repositories/snapshot-repository";
@@ -206,30 +204,23 @@ export async function commitOperation(
   input: CommitOperationInput
 ): Promise<CommittedOperation> {
   const operation = validateOperationPayload(input.operation, input.boardId);
-  const board = await assertCanEditBoard(input.boardId, input.userId);
+  await assertCanEditBoard(input.boardId, input.userId);
 
-  if (input.clientOpId) {
-    const existing = await findOperationByClientOpId(input.boardId, input.clientOpId);
-    if (existing) {
-      return operationToRecord(existing);
-    }
-  }
-
-  const record = await createOperationWithNextSeq({
+  const record = await commitOperationAtomic({
     boardId: input.boardId,
     userId: input.userId,
     opType: operation.type,
     elementId: getElementId(operation),
     clientOpId: input.clientOpId ?? null,
     payload: operation as unknown as Prisma.InputJsonValue,
+    buildNextSnapshot: (currentSnapshot) => {
+      const nextState = replayOps(
+        { elements: getSnapshotElements(currentSnapshot) },
+        [operation]
+      );
+      return { elements: nextState.elements } as unknown as Prisma.InputJsonValue;
+    },
   });
-
-  const currentState = { elements: getSnapshotElements(board.snapshot) };
-  const nextState = replayOps(currentState, [operation]);
-
-  await boardRepository.updateBoardSnapshot(input.boardId, {
-    elements: nextState.elements,
-  } as unknown as Prisma.InputJsonValue);
 
   return operationToRecord(record);
 }

@@ -1,4 +1,5 @@
 import type { Server, Socket } from "socket.io";
+import { ZodError } from "zod";
 import {
   boardJoinSchema,
   cursorUpdateSchema,
@@ -30,10 +31,12 @@ import type { AuthenticatedUser } from "../types/auth";
 type AuthedSocket = Socket & {
   data: {
     user: AuthenticatedUser;
+    joinedBoards: Set<string>;
   };
 };
 
 const boardMembers = new Map<string, Map<string, SocketUser>>();
+let ioRef: Server | null = null;
 
 function toSocketUser(user: AuthenticatedUser): SocketUser {
   return {
@@ -45,6 +48,10 @@ function toSocketUser(user: AuthenticatedUser): SocketUser {
 
 function roomName(boardId: string): string {
   return `board:${boardId}`;
+}
+
+function userRoom(userId: string): string {
+  return `user:${userId}`;
 }
 
 function getBoardMemberMap(boardId: string): Map<string, SocketUser> {
@@ -77,9 +84,19 @@ function errorAck(code: string, message: string, retryAfterMs?: number): AckResu
   };
 }
 
+function formatZodMessage(error: ZodError): string {
+  return error.issues
+    .map((issue) => `${issue.path.join(".") || "payload"}: ${issue.message}`)
+    .join("; ");
+}
+
 function mapError(error: unknown): AckResult<never> {
   if (isAppError(error)) {
     return errorAck(error.code, error.message);
+  }
+
+  if (error instanceof ZodError) {
+    return errorAck("VALIDATION_ERROR", formatZodMessage(error));
   }
 
   console.error("Socket handler error:", error);
@@ -103,12 +120,6 @@ async function enforceSocketRateLimit(
     console.error("Socket rate limit failed:", error);
     return errorAck("RATE_LIMIT_UNAVAILABLE", "Rate limit is unavailable");
   }
-}
-
-function getJoinedBoardIds(socket: Socket): string[] {
-  return [...socket.rooms]
-    .filter((room) => room.startsWith("board:"))
-    .map((room) => room.slice("board:".length));
 }
 
 async function authenticateSocket(socket: Socket): Promise<AuthenticatedUser> {
@@ -141,11 +152,18 @@ async function authenticateSocket(socket: Socket): Promise<AuthenticatedUser> {
   };
 }
 
+export function disconnectUserSockets(userId: string): void {
+  ioRef?.in(userRoom(userId)).disconnectSockets(true);
+}
+
 export function initSocket(io: Server): void {
+  ioRef = io;
+
   io.use(async (socket, next) => {
     try {
       const user = await authenticateSocket(socket);
       (socket as AuthedSocket).data.user = user;
+      (socket as AuthedSocket).data.joinedBoards = new Set();
       next();
     } catch {
       next(new Error("UNAUTHORIZED"));
@@ -155,6 +173,11 @@ export function initSocket(io: Server): void {
   io.on("connection", (rawSocket: Socket) => {
     const socket = rawSocket as AuthedSocket;
     const user = socket.data.user;
+    if (!socket.data.joinedBoards) {
+      socket.data.joinedBoards = new Set();
+    }
+
+    void socket.join(userRoom(user.id));
 
     socket.on(
       "board:join",
@@ -165,6 +188,7 @@ export function initSocket(io: Server): void {
 
           const room = roomName(payload.boardId);
           await socket.join(room);
+          socket.data.joinedBoards.add(payload.boardId);
 
           const members = getBoardMemberMap(payload.boardId);
           members.set(socket.id, toSocketUser(user));
@@ -207,7 +231,7 @@ export function initSocket(io: Server): void {
         try {
           const payload = operationCommitSchema.parse(rawPayload);
 
-          if (!socket.rooms.has(roomName(payload.boardId))) {
+          if (!socket.data.joinedBoards.has(payload.boardId)) {
             const result = errorAck("NOT_JOINED", "Join the board before committing");
             ack?.(result);
             return;
@@ -284,7 +308,7 @@ export function initSocket(io: Server): void {
     socket.on("cursor:update", async (rawPayload: unknown) => {
       try {
         const payload = cursorUpdateSchema.parse(rawPayload);
-        if (!socket.rooms.has(roomName(payload.boardId))) {
+        if (!socket.data.joinedBoards.has(payload.boardId)) {
           return;
         }
 
@@ -312,7 +336,8 @@ export function initSocket(io: Server): void {
     });
 
     socket.on("disconnect", async () => {
-      for (const boardId of getJoinedBoardIds(socket)) {
+      const boardIds = [...socket.data.joinedBoards];
+      for (const boardId of boardIds) {
         await leaveBoard(socket, boardId);
       }
     });
@@ -322,6 +347,7 @@ export function initSocket(io: Server): void {
 async function leaveBoard(socket: AuthedSocket, boardId: string): Promise<void> {
   const room = roomName(boardId);
   await socket.leave(room);
+  socket.data.joinedBoards.delete(boardId);
 
   const members = boardMembers.get(boardId);
   if (members) {

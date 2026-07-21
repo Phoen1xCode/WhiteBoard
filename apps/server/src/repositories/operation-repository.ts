@@ -11,6 +11,16 @@ export interface CreateOperationInput {
   clientOpId?: string | null;
 }
 
+export interface CommitOperationAtomicInput {
+  boardId: string;
+  opType: string;
+  payload: Prisma.InputJsonValue;
+  userId?: string | null;
+  elementId?: string | null;
+  clientOpId?: string | null;
+  buildNextSnapshot: (currentSnapshot: unknown) => Prisma.InputJsonValue;
+}
+
 export async function createOperation(input: CreateOperationInput): Promise<Operation> {
   return await prisma.operation.create({
     data: {
@@ -57,47 +67,68 @@ export async function findOperationByClientOpId(
   });
 }
 
-/** Atomic seq allocation + insert inside a transaction. Retries unique conflicts. */
-export async function createOperationWithNextSeq(
-  input: Omit<CreateOperationInput, "seq">,
-  maxAttempts = 8
+/**
+ * Lock board row, allocate seq, insert op, update snapshot in one transaction.
+ * clientOpId conflicts (P2002) resolve by returning the existing row.
+ */
+export async function commitOperationAtomic(
+  input: CommitOperationAtomicInput
 ): Promise<Operation> {
-  let lastError: unknown;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<Array<{ id: string; snapshot: unknown }>>`
+        SELECT id, snapshot FROM "Board" WHERE id = ${input.boardId} FOR UPDATE
+      `;
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return await prisma.$transaction(async (tx) => {
-        const latest = await tx.operation.findFirst({
-          where: { boardId: input.boardId },
-          orderBy: { seq: "desc" },
-          select: { seq: true },
-        });
-        const seq = (latest?.seq ?? 0) + 1;
-
-        return await tx.operation.create({
-          data: {
-            boardId: input.boardId,
-            seq,
-            opType: input.opType,
-            payload: input.payload,
-            userId: input.userId ?? null,
-            elementId: input.elementId ?? null,
-            clientOpId: input.clientOpId ?? null,
-          },
-        });
-      });
-    } catch (error) {
-      lastError = error;
-      if (isUniqueConstraintError(error)) {
-        continue;
+      const board = locked[0];
+      if (!board) {
+        throw new Error(`Board ${input.boardId} not found`);
       }
-      throw error;
-    }
-  }
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Failed to allocate operation seq");
+      if (input.clientOpId) {
+        const existing = await tx.operation.findFirst({
+          where: { boardId: input.boardId, clientOpId: input.clientOpId },
+        });
+        if (existing) {
+          return existing;
+        }
+      }
+
+      const latest = await tx.operation.findFirst({
+        where: { boardId: input.boardId },
+        orderBy: { seq: "desc" },
+        select: { seq: true },
+      });
+      const seq = (latest?.seq ?? 0) + 1;
+
+      const operation = await tx.operation.create({
+        data: {
+          boardId: input.boardId,
+          seq,
+          opType: input.opType,
+          payload: input.payload,
+          userId: input.userId ?? null,
+          elementId: input.elementId ?? null,
+          clientOpId: input.clientOpId ?? null,
+        },
+      });
+
+      await tx.board.update({
+        where: { id: input.boardId },
+        data: { snapshot: input.buildNextSnapshot(board.snapshot) },
+      });
+
+      return operation;
+    });
+  } catch (error) {
+    if (input.clientOpId && isUniqueConstraintError(error)) {
+      const existing = await findOperationByClientOpId(input.boardId, input.clientOpId);
+      if (existing) {
+        return existing;
+      }
+    }
+    throw error;
+  }
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
