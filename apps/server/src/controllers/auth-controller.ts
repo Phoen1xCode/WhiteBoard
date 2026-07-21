@@ -61,11 +61,14 @@ export async function refresh(ctx: Context): Promise<void> {
 export async function logout(ctx: Context): Promise<void> {
   const body = getRequestBody<LogoutBody>(ctx);
   const accessTokenPayload = getJwtPayload(ctx);
-  await authService.logout({
-    accessTokenPayload,
-    refreshToken: body.refreshToken,
-  });
-  disconnectUserSockets(accessTokenPayload.sub);
+  try {
+    await authService.logout({
+      accessTokenPayload,
+      refreshToken: body.refreshToken,
+    });
+  } finally {
+    disconnectUserSockets(accessTokenPayload.sub);
+  }
   ctx.body = success({ loggedOut: true });
 }
 

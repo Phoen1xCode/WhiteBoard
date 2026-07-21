@@ -127,8 +127,11 @@ export async function logout(input: LogoutInput): Promise<void> {
     return;
   }
 
-  const refreshPayload = verifyRefreshTokenOrThrow(input.refreshToken);
-  await blacklistToken(refreshPayload.jti, refreshPayload.exp);
+  try {
+    const refreshPayload = verifyRefreshTokenOrThrow(input.refreshToken);
+    await blacklistToken(refreshPayload.jti, refreshPayload.exp);
+  } catch {
+  }
 }
 
 export async function getMe(userId: string): Promise<SafeUser> {
