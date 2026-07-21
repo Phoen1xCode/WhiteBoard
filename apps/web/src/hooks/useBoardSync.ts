@@ -3,6 +3,7 @@ import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 import {
   connect,
   disconnect,
+  failBoardReady,
   offOperation,
   onOperation,
   resetLastConfirmedSeq,
@@ -32,6 +33,7 @@ export function useBoardSync(boardId: string) {
         connect(boardId);
       } catch (error) {
         console.error("Failed to sync board:", error);
+        failBoardReady(error instanceof Error ? error.message : "Failed to sync board");
       }
     })();
 

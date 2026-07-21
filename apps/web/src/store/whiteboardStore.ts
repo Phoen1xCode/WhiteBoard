@@ -10,41 +10,6 @@ import type {
 } from "@whiteboard/shared/types";
 import { sendOperation } from "../lib/socket";
 
-function rollbackLocal(inverse: WhiteBoardOperation): void {
-  useWhiteboardStore.setState(
-    produce((draft: State) => {
-      switch (inverse.type) {
-        case "add":
-          draft.elements[inverse.element.id] = inverse.element;
-          break;
-        case "update":
-          if (draft.elements[inverse.elementId]) {
-            Object.assign(draft.elements[inverse.elementId], inverse.changes);
-          }
-          break;
-        case "delete":
-          delete draft.elements[inverse.elementId];
-          break;
-        case "clear":
-          draft.elements = {};
-          break;
-      }
-    })
-  );
-}
-
-function commitLocal(
-  operation: WhiteBoardOperation,
-  inverse: WhiteBoardOperation | null
-): void {
-  void sendOperation(operation, nanoid()).catch((error) => {
-    console.error("Failed to commit operation:", error);
-    if (inverse) {
-      rollbackLocal(inverse);
-    }
-  });
-}
-
 // 绘制样式配置
 type DrawingStyle = {
   strokeColor: string; // 描边颜色
@@ -58,6 +23,56 @@ type HistoryEntry = {
   operation: WhiteBoardOperation; // 原始操作
   inverse: WhiteBoardOperation; // 逆向操作
 };
+
+function applyInverseToElements(
+  draft: { elements: Record<string, WhiteBoardElement> },
+  inverse: WhiteBoardOperation
+): void {
+  switch (inverse.type) {
+    case "add":
+      draft.elements[inverse.element.id] = inverse.element;
+      break;
+    case "update":
+      if (draft.elements[inverse.elementId]) {
+        Object.assign(draft.elements[inverse.elementId], inverse.changes);
+      }
+      break;
+    case "delete":
+      delete draft.elements[inverse.elementId];
+      break;
+    case "clear":
+      draft.elements = {};
+      break;
+  }
+}
+
+function rollbackLocal(
+  inverse: WhiteBoardOperation,
+  historyEntry: HistoryEntry | null
+): void {
+  useWhiteboardStore.setState(
+    produce((draft: State) => {
+      applyInverseToElements(draft, inverse);
+      if (historyEntry) {
+        draft.undoStack = draft.undoStack.filter((entry) => entry !== historyEntry);
+        draft.redoStack = draft.redoStack.filter((entry) => entry !== historyEntry);
+      }
+    })
+  );
+}
+
+function commitLocal(
+  operation: WhiteBoardOperation,
+  rollbackOp: WhiteBoardOperation | null,
+  historyEntry: HistoryEntry | null
+): void {
+  void sendOperation(operation, nanoid()).catch((error) => {
+    console.error("Failed to commit operation:", error);
+    if (rollbackOp) {
+      rollbackLocal(rollbackOp, historyEntry);
+    }
+  });
+}
 
 /**
  * 应用状态定义
@@ -236,7 +251,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
 
     // 本地操作提交到服务端（ack 后再由其他客户端收到 committed）
     if (local) {
-      commitLocal(operation, historyEntry?.inverse ?? null);
+      commitLocal(operation, historyEntry?.inverse ?? null, historyEntry);
     }
   },
 
@@ -300,27 +315,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
     set(
       produce((draft: State) => {
         // 应用逆向操作
-        const inverse = entry.inverse;
-        switch (inverse.type) {
-          case "add":
-            // 逆向删除操作：重新添加元素
-            draft.elements[inverse.element.id] = inverse.element;
-            break;
-          case "update":
-            // 逆向更新操作：恢复原始值
-            if (draft.elements[inverse.elementId]) {
-              Object.assign(draft.elements[inverse.elementId], inverse.changes);
-            }
-            break;
-          case "delete":
-            // 逆向添加操作：删除元素
-            delete draft.elements[inverse.elementId];
-            break;
-          case "clear":
-            // 逆向清空操作：清空元素
-            draft.elements = {};
-            break;
-        }
+        applyInverseToElements(draft, entry.inverse);
 
         // 将操作从撤销栈移到重做栈
         draft.undoStack.pop();
@@ -331,7 +326,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
     // 确保逆向操作使用正确的 boardId 并发送到其他客户端同步
     const syncedInverse = { ...entry.inverse, boardId };
     const syncedOperation = { ...entry.operation, boardId };
-    commitLocal(syncedInverse, syncedOperation);
+    commitLocal(syncedInverse, syncedOperation, entry);
   },
 
   /**
@@ -375,7 +370,7 @@ export const useWhiteboardStore = create<State & Actions>((set, get) => ({
     // 确保原始操作使用正确的 boardId 并发送到其他客户端同步
     const syncedOperation = { ...entry.operation, boardId };
     const syncedInverse = { ...entry.inverse, boardId };
-    commitLocal(syncedOperation, syncedInverse);
+    commitLocal(syncedOperation, syncedInverse, entry);
   },
 
   /**
