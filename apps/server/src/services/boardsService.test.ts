@@ -42,11 +42,6 @@ vi.mock("../repositories/board-repository", () => ({
     boards.delete(id);
     return board;
   },
-  updateBoardSnapshot: async (id: string, snapshot: unknown) => {
-    const board = boards.get(id);
-    board.snapshot = snapshot;
-    return board;
-  },
 }));
 
 vi.mock("../repositories/permission-repository", () => ({

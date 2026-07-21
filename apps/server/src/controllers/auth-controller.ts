@@ -2,6 +2,7 @@ import type { Context } from "koa";
 import { AppError } from "../lib/app-error";
 import { success } from "../lib/response";
 import * as authService from "../services/auth-service";
+import { disconnectUserSockets } from "../sockets/socket";
 import type { JwtTokenPayload } from "../types/auth";
 
 interface RequestWithBody<TBody> {
@@ -59,10 +60,12 @@ export async function refresh(ctx: Context): Promise<void> {
 
 export async function logout(ctx: Context): Promise<void> {
   const body = getRequestBody<LogoutBody>(ctx);
+  const accessTokenPayload = getJwtPayload(ctx);
   await authService.logout({
-    accessTokenPayload: getJwtPayload(ctx),
+    accessTokenPayload,
     refreshToken: body.refreshToken,
   });
+  disconnectUserSockets(accessTokenPayload.sub);
   ctx.body = success({ loggedOut: true });
 }
 

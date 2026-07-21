@@ -78,8 +78,20 @@ vi.mock("../repositories/permission-repository", () => ({
 }));
 
 vi.mock("../repositories/operation-repository", () => ({
-  createOperationWithNextSeq: async (input: any) => {
+  commitOperationAtomic: async (input: any) => {
+    if (input.clientOpId) {
+      const existing = operations.find(
+        (o) => o.boardId === input.boardId && o.clientOpId === input.clientOpId
+      );
+      if (existing) return existing;
+    }
+
     seq += 1;
+    const board = boards.get(input.boardId);
+    if (board && typeof input.buildNextSnapshot === "function") {
+      board.snapshot = input.buildNextSnapshot(board.snapshot);
+    }
+
     const record = {
       id: `op-${seq}`,
       boardId: input.boardId,

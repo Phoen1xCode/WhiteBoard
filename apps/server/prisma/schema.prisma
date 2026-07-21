@@ -68,6 +68,7 @@ model Operation {
   createdAt  DateTime @default(now())
 
   @@unique([boardId, seq])
+  @@unique([boardId, clientOpId])
   @@index([boardId, createdAt])
   @@index([userId])
 }

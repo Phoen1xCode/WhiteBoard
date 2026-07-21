@@ -1,9 +1,5 @@
-import { PermissionRole, type Board, type Permission, type Prisma } from "../../prisma/generated/client";
-import type {
-  WhiteBoardSnapshot,
-  WhiteBoardOperation,
-  WhiteBoardElement,
-} from "@whiteboard/shared/types";
+import { PermissionRole, type Board, type Permission } from "../../prisma/generated/client";
+import type { WhiteBoardSnapshot, WhiteBoardElement } from "@whiteboard/shared/types";
 import { AppError } from "../lib/app-error";
 import * as boardRepository from "../repositories/board-repository";
 import { findLatestOperationSeq } from "../repositories/operation-repository";
@@ -111,15 +107,6 @@ export async function getBoard(
   return toWhiteBoardSnapshot(board);
 }
 
-export async function updateBoard(
-  id: string,
-  snapshot: Prisma.InputJsonValue,
-  userId: string
-): Promise<Board> {
-  await assertCanEditBoard(id, userId);
-  return await boardRepository.updateBoardSnapshot(id, snapshot);
-}
-
 export async function updateBoardTitle(
   id: string,
   title: string,
@@ -137,55 +124,4 @@ export async function deleteBoard(id: string, userId: string): Promise<Board> {
 
 export async function listBoards(userId: string): Promise<Board[]> {
   return await boardRepository.listBoardsByUserId(userId);
-}
-
-export async function applyOperationToSnapshot(
-  boardId: string,
-  operation: WhiteBoardOperation,
-  userId?: string
-): Promise<void> {
-  const board = userId
-    ? await assertCanEditBoard(boardId, userId)
-    : await boardRepository.findBoardById(boardId);
-
-  if (!board) {
-    throw new Error(`Board ${boardId} not found`);
-  }
-
-  const elements = getSnapshotElements(board.snapshot);
-  const elementsMap: Record<string, WhiteBoardElement> = {};
-
-  elements.forEach((element) => {
-    elementsMap[element.id] = element;
-  });
-
-  switch (operation.type) {
-    case "add":
-      elementsMap[operation.element.id] = operation.element;
-      break;
-
-    case "update":
-      if (elementsMap[operation.elementId]) {
-        elementsMap[operation.elementId] = {
-          ...elementsMap[operation.elementId],
-          ...operation.changes,
-        } as WhiteBoardElement;
-      }
-      break;
-
-    case "delete":
-      delete elementsMap[operation.elementId];
-      break;
-
-    case "clear":
-      Object.keys(elementsMap).forEach((key) => {
-        delete elementsMap[key];
-      });
-      break;
-  }
-
-  const updatedElements = Object.values(elementsMap);
-  await boardRepository.updateBoardSnapshot(boardId, {
-    elements: updatedElements,
-  } as unknown as Prisma.InputJsonValue);
 }

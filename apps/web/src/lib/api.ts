@@ -47,7 +47,7 @@ async function parseJson<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
 
