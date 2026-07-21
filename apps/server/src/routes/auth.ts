@@ -1,24 +1,14 @@
 import Router from "@koa/router";
 import { z } from "zod";
+import {
+  loginBodySchema,
+  refreshBodySchema,
+  registerBodySchema,
+} from "@whiteboard/shared/schemas";
 import * as authController from "../controllers/auth-controller";
 import { authMiddleware } from "../middleware/auth";
 import { getClientIp, rateLimit } from "../middleware/rate-limit";
 import { validateBody } from "../middleware/validate";
-
-const registerBodySchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3).max(50),
-  password: z.string().min(8).max(128),
-});
-
-const loginBodySchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1).max(128),
-});
-
-const refreshBodySchema = z.object({
-  refreshToken: z.string().min(1),
-});
 
 const logoutBodySchema = z.object({
   refreshToken: z.string().min(1).optional(),

@@ -6,6 +6,7 @@ import type {
 } from "@whiteboard/shared/types";
 import { AppError } from "../lib/app-error";
 import * as boardRepository from "../repositories/board-repository";
+import { findLatestOperationSeq } from "../repositories/operation-repository";
 import { findPermission } from "../repositories/permission-repository";
 
 interface SnapshotValue {
@@ -26,12 +27,18 @@ function getSnapshotElements(snapshot: unknown): WhiteBoardElement[] {
   return elements as WhiteBoardElement[];
 }
 
-function toWhiteBoardSnapshot(board: Board): WhiteBoardSnapshot {
+export interface BoardSnapshotWithSeq extends WhiteBoardSnapshot {
+  lastSeq: number;
+}
+
+async function toWhiteBoardSnapshot(board: Board): Promise<BoardSnapshotWithSeq> {
+  const lastSeq = (await findLatestOperationSeq(board.id)) ?? 0;
   return {
     id: board.id,
     title: board.title,
     elements: getSnapshotElements(board.snapshot),
     updatedAt: board.updatedAt.toISOString(),
+    lastSeq,
   };
 }
 
@@ -52,7 +59,7 @@ async function findBoardPermission(
   const permission = await findPermission(boardId, userId);
 
   if (!permission) {
-    throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
+    throw new AppError(403, "FORBIDDEN", "No permission to access this board");
   }
 
   return { board, permission };
@@ -86,7 +93,7 @@ async function requireOwnerPermission(boardId: string, userId: string): Promise<
 export async function createBoard(
   title: string,
   userId: string
-): Promise<WhiteBoardSnapshot> {
+): Promise<BoardSnapshotWithSeq> {
   const result = await boardRepository.createBoardWithOwner({
     title,
     snapshot: { elements: [] },
@@ -99,7 +106,7 @@ export async function createBoard(
 export async function getBoard(
   id: string,
   userId: string
-): Promise<WhiteBoardSnapshot> {
+): Promise<BoardSnapshotWithSeq> {
   const board = await assertCanAccessBoard(id, userId);
   return toWhiteBoardSnapshot(board);
 }
@@ -117,7 +124,7 @@ export async function updateBoardTitle(
   id: string,
   title: string,
   userId: string
-): Promise<WhiteBoardSnapshot> {
+): Promise<BoardSnapshotWithSeq> {
   await assertCanEditBoard(id, userId);
   const board = await boardRepository.updateBoardTitle(id, title);
   return toWhiteBoardSnapshot(board);
