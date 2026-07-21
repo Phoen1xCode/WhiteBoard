@@ -176,10 +176,10 @@ src/lib/response.ts
 
 ```txt
 dotenv
-jose
+jsonwebtoken
 ioredis
 zod
-bcrypt 或 argon2
+bcryptjs
 ```
 
 验证标准：
@@ -228,11 +228,11 @@ src/services/auth.service.ts
 新增路由：
 
 ```txt
-POST /auth/register
-POST /auth/login
-POST /auth/refresh
-POST /auth/logout
-GET  /auth/me
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+GET  /api/v1/auth/me
 ```
 
 新增 middleware：

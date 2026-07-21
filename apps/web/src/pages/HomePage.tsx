@@ -30,19 +30,19 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadBoards();
-  }, []);
-
-  async function loadBoards() {
-    try {
-      const data = await listBoards();
-      setBoards(data);
-    } catch (error) {
-      console.error("Failed to load boards:", error);
-    } finally {
-      setIsLoading(false);
+    async function loadBoards() {
+      try {
+        const data = await listBoards();
+        setBoards(data);
+      } catch (error) {
+        console.error("Failed to load boards:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }
+
+    void loadBoards();
+  }, []);
 
   async function handleCreateBoard() {
     setIsCreating(true);
