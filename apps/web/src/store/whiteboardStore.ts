@@ -8,7 +8,7 @@ import type {
   WhiteBoardOperation,
   ShapeType,
 } from "@whiteboard/shared/types";
-import { sendOperation } from "../lib/socket";
+import { sendOperation, SocketCommitError } from "../lib/socket";
 
 // 绘制样式配置
 type DrawingStyle = {
@@ -68,7 +68,11 @@ function commitLocal(
 ): void {
   void sendOperation(operation, nanoid()).catch((error) => {
     console.error("Failed to commit operation:", error);
-    if (rollbackOp) {
+    if (
+      rollbackOp &&
+      error instanceof SocketCommitError &&
+      error.definitive
+    ) {
       rollbackLocal(rollbackOp, historyEntry);
     }
   });
