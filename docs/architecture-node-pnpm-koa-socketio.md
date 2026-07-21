@@ -39,7 +39,7 @@ WhiteBoard 是一个面向团队协作的在线白板产品，核心目标是提
 - 路由：@koa/router。
 - 实时通信：Socket.IO。
 - 校验：Zod，优先与前端共享 schema。
-- 鉴权：JWT，使用 jose。
+- 鉴权：JWT，使用 jsonwebtoken。
 - 缓存与限流：Redis，使用 ioredis。
 - 数据库：PostgreSQL。
 - ORM：Prisma。
@@ -308,11 +308,11 @@ GET /health
 ### 7.2 认证接口
 
 ```txt
-POST /auth/register
-POST /auth/login
-POST /auth/refresh
-POST /auth/logout
-GET  /auth/me
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+GET  /api/v1/auth/me
 ```
 
 建议 token 策略：
@@ -325,22 +325,21 @@ GET  /auth/me
 ### 7.3 白板接口
 
 ```txt
-GET    /boards
-POST   /boards
-GET    /boards/:boardId
-PATCH  /boards/:boardId
-DELETE /boards/:boardId
-GET    /boards/:boardId/replay
+GET    /api/v1/boards
+POST   /api/v1/boards
+GET    /api/v1/boards/:boardId
+PATCH  /api/v1/boards/:boardId
+DELETE /api/v1/boards/:boardId
 ```
 
 建议职责：
 
-- `GET /boards`：获取当前用户可访问白板列表。
-- `POST /boards`：创建白板并创建 owner permission。
-- `GET /boards/:boardId`：获取白板元信息和当前快照状态。
-- `PATCH /boards/:boardId`：更新标题等元信息。
-- `DELETE /boards/:boardId`：仅 owner 可删除。
-- `GET /boards/:boardId/replay?fromSeq=100`：获取某个 seq 之后的操作列表，用于断线恢复。
+- `GET /api/v1/boards`：获取当前用户可访问白板列表。
+- `POST /api/v1/boards`：创建白板并创建 owner permission。
+- `GET /api/v1/boards/:boardId`：获取白板元信息、当前快照和 `lastSeq`。
+- `PATCH /api/v1/boards/:boardId`：更新标题等元信息。
+- `DELETE /api/v1/boards/:boardId`：仅 owner 可删除。
+- 断线补齐：MAV 使用 Socket `operation:replay`（`fromSeq`）；HTTP replay 路由如需再补。
 
 ## 8. Socket.IO 实时协作方案
 

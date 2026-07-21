@@ -148,8 +148,10 @@ function createInverseOperation(
 
       // 存储变更属性的原始值
       const originalChanges: Partial<WhiteBoardElement> = {};
-      for (const key of Object.keys(operation.changes)) {
-        (originalChanges as any)[key] = (element as any)[key];
+      for (const key of Object.keys(
+        operation.changes,
+      ) as (keyof WhiteBoardElement)[]) {
+        Object.assign(originalChanges, { [key]: element[key] });
       }
       return {
         type: "update",
