@@ -2,7 +2,7 @@ import type { WhiteBoardElement } from "@whiteboard/shared/types";
 
 import { Trash2, Settings2, X } from "lucide-react";
 
-import { useWhiteboardStore } from "../../store/whiteboardStore";
+import { useWhiteboardStore } from "@/store/whiteboardStore";
 
 interface Props {
   boardId: string;

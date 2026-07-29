@@ -6,7 +6,7 @@ import {
   getConnectionStatus,
   onStatusChange,
   offStatusChange,
-} from "../../lib/socket";
+} from "@/lib/socket";
 
 const statusConfig: Record<
   ConnectionStatus,

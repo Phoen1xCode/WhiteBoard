@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-import { createBoard, listBoards, deleteBoard, logout, type BoardListItem } from "../lib/api";
-import { getStoredUser } from "../lib/auth";
+import { createBoard, listBoards, deleteBoard, logout, type BoardListItem } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
 
 export function HomePage() {
   const navigate = useNavigate();

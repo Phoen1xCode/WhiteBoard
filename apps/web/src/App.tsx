@@ -1,11 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+import { RequireAuth } from "@/components/RequireAuth";
 import { Toaster } from "@/components/ui/sonner";
-
-import { RequireAuth } from "./components/RequireAuth";
-import { BoardPage } from "./pages/BoardPage";
-import { HomePage } from "./pages/HomePage";
-import { LoginPage } from "./pages/LoginPage";
+import { BoardPage } from "@/pages/BoardPage";
+import { HomePage } from "@/pages/HomePage";
+import { LoginPage } from "@/pages/LoginPage";
 
 function App() {
   return (

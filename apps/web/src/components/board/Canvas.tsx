@@ -11,7 +11,7 @@ import { nanoid } from "nanoid";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Stage, Layer, Line, Rect, Circle, Transformer } from "react-konva";
 
-import { useWhiteboardStore } from "../../store/whiteboardStore";
+import { useWhiteboardStore } from "@/store/whiteboardStore";
 
 interface Props {
   boardId: string;

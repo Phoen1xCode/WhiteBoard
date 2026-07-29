@@ -1,6 +1,6 @@
 import { MousePointer } from "lucide-react";
 
-import type { CursorInfo } from "../../hooks/useCursors";
+import type { CursorInfo } from "@/hooks/useCursors";
 
 interface CursorsProps {
   cursors: CursorInfo[];

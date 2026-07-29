@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-import { sendCursor, onCursor, offCursor, getSocketId, type CursorData } from "../lib/socket";
+import { sendCursor, onCursor, offCursor, getSocketId, type CursorData } from "@/lib/socket";
 
 export interface CursorInfo {
   clientId: string;

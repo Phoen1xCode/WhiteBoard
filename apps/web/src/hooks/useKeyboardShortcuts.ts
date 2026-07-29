@@ -2,7 +2,7 @@ import type { ShapeType } from "@whiteboard/shared/types";
 
 import { useEffect } from "react";
 
-import { useWhiteboardStore } from "../store/whiteboardStore";
+import { useWhiteboardStore } from "@/store/whiteboardStore";
 
 interface UseKeyboardShortcutsOptions {
   boardId: string;

@@ -1,10 +1,10 @@
 import { Palette } from "lucide-react";
 
-import { useWhiteboardStore } from "../../store/whiteboardStore";
-import { ColorSelector } from "../style/ColorSelector";
-import { FillColorSelector } from "../style/FillColorSelector";
-import { LineStyleSelector } from "../style/LineStyleSelector";
-import { StrokeWidthSlider } from "../style/StrokeWidthSlider";
+import { ColorSelector } from "@/components/style/ColorSelector";
+import { FillColorSelector } from "@/components/style/FillColorSelector";
+import { LineStyleSelector } from "@/components/style/LineStyleSelector";
+import { StrokeWidthSlider } from "@/components/style/StrokeWidthSlider";
+import { useWhiteboardStore } from "@/store/whiteboardStore";
 
 // Excalidraw-inspired color palette
 const PRESET_COLORS = [

@@ -1,4 +1,4 @@
-import type { SafeUser, TokenPair } from "./api";
+import type { SafeUser, TokenPair } from "@/lib/api";
 
 const ACCESS_KEY = "wb_access_token";
 const REFRESH_KEY = "wb_refresh_token";

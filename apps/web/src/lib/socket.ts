@@ -9,8 +9,8 @@ import type {
 
 import { io, type Socket } from "socket.io-client";
 
-import { refreshAccessToken } from "./api";
-import { getAccessToken } from "./auth";
+import { refreshAccessToken } from "@/lib/api";
+import { getAccessToken } from "@/lib/auth";
 
 type StatusChangeHandler = (status: ConnectionStatus) => void;
 type OperationHandler = (operation: WhiteBoardOperation, seq: number) => void;

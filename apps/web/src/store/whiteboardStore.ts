@@ -6,7 +6,7 @@ import { produce } from "immer";
 import { nanoid } from "nanoid";
 import { create } from "zustand";
 
-import { isBoardReady, sendOperation, SocketCommitError } from "../lib/socket";
+import { isBoardReady, sendOperation, SocketCommitError } from "@/lib/socket";
 
 // 绘制样式配置
 type DrawingStyle = {

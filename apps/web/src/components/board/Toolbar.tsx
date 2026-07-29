@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-import { useWhiteboardStore } from "../../store/whiteboardStore";
+import { useWhiteboardStore } from "@/store/whiteboardStore";
 
 const tools = [
   {

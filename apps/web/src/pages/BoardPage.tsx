@@ -10,10 +10,10 @@ import {
   PropertyPanel,
   ConnectionStatus,
   Cursors,
-} from "../components";
-import { useBoardSync } from "../hooks/useBoardSync";
-import { useCursors } from "../hooks/useCursors";
-import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+} from "@/components";
+import { useBoardSync } from "@/hooks/useBoardSync";
+import { useCursors } from "@/hooks/useCursors";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>();

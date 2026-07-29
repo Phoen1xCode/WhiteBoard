@@ -2,7 +2,7 @@ import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 
 import { useEffect } from "react";
 
-import { getBoard } from "../lib/api";
+import { getBoard } from "@/lib/api";
 import {
   connect,
   disconnect,
@@ -10,8 +10,8 @@ import {
   offOperation,
   onOperation,
   resetLastConfirmedSeq,
-} from "../lib/socket";
-import { useWhiteboardStore } from "../store/whiteboardStore";
+} from "@/lib/socket";
+import { useWhiteboardStore } from "@/store/whiteboardStore";
 
 export function useBoardSync(boardId: string) {
   const setInitialElements = useWhiteboardStore((s) => s.setInitialElements);
