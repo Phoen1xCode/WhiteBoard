@@ -152,18 +152,21 @@ export async function getMe(): Promise<SafeUser> {
 export type BoardSnapshot = WhiteBoardSnapshot & { lastSeq: number };
 
 export async function createBoard(title?: string): Promise<BoardSnapshot> {
-  return request<BoardSnapshot>("/api/v1/boards", {
+  const body = await request<ApiSuccess<BoardSnapshot>>("/api/v1/boards", {
     method: "POST",
     body: JSON.stringify({ title }),
   });
+  return body.data;
 }
 
 export async function getBoard(id: string): Promise<BoardSnapshot> {
-  return request<BoardSnapshot>(`/api/v1/boards/${id}`);
+  const body = await request<ApiSuccess<BoardSnapshot>>(`/api/v1/boards/${id}`);
+  return body.data;
 }
 
 export async function listBoards(): Promise<BoardListItem[]> {
-  return request<BoardListItem[]>("/api/v1/boards");
+  const body = await request<ApiSuccess<BoardListItem[]>>("/api/v1/boards");
+  return body.data;
 }
 
 export async function deleteBoard(id: string): Promise<void> {
