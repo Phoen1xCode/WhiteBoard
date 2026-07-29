@@ -6,7 +6,7 @@ import {
   signTokenPair,
   verifyAccessToken,
   verifyRefreshToken,
-} from "./jwt";
+} from "@/lib/jwt";
 
 describe("jwt", () => {
   it("signs and verifies access/refresh tokens", () => {

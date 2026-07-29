@@ -17,19 +17,19 @@ import {
 } from "@whiteboard/shared/schemas";
 import { ZodError } from "zod";
 
-import type { AuthenticatedUser } from "../types/auth";
+import type { AuthenticatedUser } from "@/types/auth";
 
-import { isAppError } from "../lib/app-error";
-import { verifyAccessToken } from "../lib/jwt";
-import { isTokenBlacklisted } from "../lib/token-blacklist";
-import { checkRateLimit } from "../middleware/rate-limit";
-import { findUserById } from "../repositories/user-repository";
-import { assertCanAccessBoard, assertCanEditBoard } from "../services/boardsService";
+import { isAppError } from "@/lib/app-error";
+import { verifyAccessToken } from "@/lib/jwt";
+import { isTokenBlacklisted } from "@/lib/token-blacklist";
+import { checkRateLimit } from "@/middleware/rate-limit";
+import { findUserById } from "@/repositories/user-repository";
+import { assertCanAccessBoard, assertCanEditBoard } from "@/services/boardsService";
 import {
   commitOperation,
   getOperationsAfter,
   type CommittedOperation,
-} from "../services/operation-service";
+} from "@/services/operation-service";
 
 type AuthedSocket = Socket & {
   data: {

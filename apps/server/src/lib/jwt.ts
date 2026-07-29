@@ -1,6 +1,6 @@
 import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 
-import type { JwtTokenPayload, TokenPair, TokenType } from "../types/auth";
+import type { JwtTokenPayload, TokenPair, TokenType } from "@/types/auth";
 
 import "dotenv/config";
 

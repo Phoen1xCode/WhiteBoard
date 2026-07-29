@@ -51,7 +51,7 @@ vi.mock("../repositories/permission-repository", () => ({
     permissions.get(`${boardId}:${userId}`) ?? null,
 }));
 
-import { assertCanEditBoard, createBoard, deleteBoard, getBoard } from "./boardsService";
+import { assertCanEditBoard, createBoard, deleteBoard, getBoard } from "@/services/boardsService";
 
 describe("board permissions", () => {
   beforeEach(() => {

@@ -1,7 +1,7 @@
 import type { Context, Middleware } from "koa";
 
-import { connectRedis } from "../lib/redis";
-import { failure } from "../lib/response";
+import { connectRedis } from "@/lib/redis";
+import { failure } from "@/lib/response";
 
 export interface RateLimitResult {
   allowed: boolean;

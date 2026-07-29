@@ -1,17 +1,18 @@
 import bcrypt from "bcryptjs";
 
-import type { User } from "../../prisma/generated/client";
-import type { AuthResult, JwtTokenPayload, SafeUser, TokenPair } from "../types/auth";
+import type { AuthResult, JwtTokenPayload, SafeUser, TokenPair } from "@/types/auth";
 
-import { AppError } from "../lib/app-error";
-import { signTokenPair, verifyRefreshToken } from "../lib/jwt";
-import { blacklistToken, isTokenBlacklisted } from "../lib/token-blacklist";
+import { AppError } from "@/lib/app-error";
+import { signTokenPair, verifyRefreshToken } from "@/lib/jwt";
+import { blacklistToken, isTokenBlacklisted } from "@/lib/token-blacklist";
 import {
   createUser,
   findUserByEmail,
   findUserById,
   findUserByUsername,
-} from "../repositories/user-repository";
+} from "@/repositories/user-repository";
+
+import type { User } from "../../prisma/generated/client";
 
 export interface RegisterInput {
   email: string;

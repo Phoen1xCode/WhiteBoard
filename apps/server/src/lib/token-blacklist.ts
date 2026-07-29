@@ -1,4 +1,4 @@
-import { connectRedis } from "./redis";
+import { connectRedis } from "@/lib/redis";
 
 const blacklistKeyPrefix = "jwt:blacklist";
 

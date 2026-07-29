@@ -1,9 +1,9 @@
 import type { Context } from "koa";
 
-import type { AuthenticatedUser } from "../types/auth";
+import type { AuthenticatedUser } from "@/types/auth";
 
-import { AppError } from "../lib/app-error";
-import * as boardsService from "../services/boardsService";
+import { AppError } from "@/lib/app-error";
+import * as boardsService from "@/services/boardsService";
 
 interface CreateBoardBody {
   title?: string;

@@ -2,11 +2,11 @@ import cors from "@koa/cors";
 import Koa from "koa";
 import bodyParser from "koa-bodyparser";
 
-import { errorMiddleware } from "./middleware/error";
-import { createAuthRouter } from "./routes/auth";
-import { createBoardsRouter } from "./routes/boards";
+import { errorMiddleware } from "@/middleware/error";
+import { createAuthRouter } from "@/routes/auth";
+import { createBoardsRouter } from "@/routes/boards";
 
-import "./types/koa";
+import "@/types/koa";
 
 export function createApp(): Koa {
   const app = new Koa();

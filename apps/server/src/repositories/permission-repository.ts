@@ -1,6 +1,6 @@
-import type { Permission, PermissionRole } from "../../prisma/generated/client";
+import { prisma } from "@/lib/prisma";
 
-import { prisma } from "../lib/prisma";
+import type { Permission, PermissionRole } from "../../prisma/generated/client";
 
 export interface CreatePermissionInput {
   boardId: string;

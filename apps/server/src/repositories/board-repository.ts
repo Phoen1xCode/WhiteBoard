@@ -1,5 +1,6 @@
+import { prisma } from "@/lib/prisma";
+
 import { PermissionRole, type Board, type Prisma } from "../../prisma/generated/client";
-import { prisma } from "../lib/prisma";
 
 export interface CreateBoardInput {
   title: string;

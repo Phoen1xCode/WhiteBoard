@@ -2,7 +2,7 @@ import type { WhiteBoardElement, WhiteBoardOperation } from "@whiteboard/shared/
 
 import { describe, expect, it } from "vitest";
 
-import { replayOps, validateOperationPayload } from "./operation-service";
+import { replayOps, validateOperationPayload } from "@/services/operation-service";
 
 const rect = (id: string, x = 0): WhiteBoardElement => ({
   id,

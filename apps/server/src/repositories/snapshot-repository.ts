@@ -1,6 +1,6 @@
-import type { Prisma, Snapshot } from "../../prisma/generated/client";
+import { prisma } from "@/lib/prisma";
 
-import { prisma } from "../lib/prisma";
+import type { Prisma, Snapshot } from "../../prisma/generated/client";
 
 export interface CreateSnapshotInput {
   boardId: string;

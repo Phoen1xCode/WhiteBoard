@@ -1,4 +1,4 @@
-import type { AuthenticatedUser, JwtTokenPayload } from "./auth";
+import type { AuthenticatedUser, JwtTokenPayload } from "@/types/auth";
 
 import "koa";
 

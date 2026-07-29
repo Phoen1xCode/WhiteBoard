@@ -1,9 +1,10 @@
 import type { WhiteBoardSnapshot, WhiteBoardElement } from "@whiteboard/shared/types";
 
+import { AppError } from "@/lib/app-error";
+import * as boardRepository from "@/repositories/board-repository";
+import { findPermission } from "@/repositories/permission-repository";
+
 import { PermissionRole, type Board, type Permission } from "../../prisma/generated/client";
-import { AppError } from "../lib/app-error";
-import * as boardRepository from "../repositories/board-repository";
-import { findPermission } from "../repositories/permission-repository";
 
 interface SnapshotValue {
   elements?: unknown;

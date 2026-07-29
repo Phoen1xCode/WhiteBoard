@@ -3,10 +3,10 @@ import type { Context } from "koa";
 import Router from "@koa/router";
 import { createBoardBodySchema, updateBoardTitleBodySchema } from "@whiteboard/shared/schemas";
 
-import * as boardsController from "../controllers/boardsController";
-import { authMiddleware } from "../middleware/auth";
-import { getClientIp, rateLimit } from "../middleware/rate-limit";
-import { validateBody } from "../middleware/validate";
+import * as boardsController from "@/controllers/boardsController";
+import { authMiddleware } from "@/middleware/auth";
+import { getClientIp, rateLimit } from "@/middleware/rate-limit";
+import { validateBody } from "@/middleware/validate";
 
 function getBoardCreateRateLimitKey(ctx: Context): string {
   return ctx.state.user?.id ?? getClientIp(ctx);

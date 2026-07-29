@@ -1,6 +1,6 @@
-import type { Operation, Prisma } from "../../prisma/generated/client";
+import { prisma } from "@/lib/prisma";
 
-import { prisma } from "../lib/prisma";
+import type { Operation, Prisma } from "../../prisma/generated/client";
 
 export interface CreateOperationInput {
   boardId: string;

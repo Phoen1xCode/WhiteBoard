@@ -1,7 +1,7 @@
 import type { Middleware } from "koa";
 
-import { isAppError } from "../lib/app-error";
-import { failure } from "../lib/response";
+import { isAppError } from "@/lib/app-error";
+import { failure } from "@/lib/response";
 
 interface HttpError extends Error {
   status?: number;

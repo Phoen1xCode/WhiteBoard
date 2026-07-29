@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { resetRedisForTests } from "./redis";
-import { blacklistToken, isTokenBlacklisted } from "./token-blacklist";
+import { resetRedisForTests } from "@/lib/redis";
+import { blacklistToken, isTokenBlacklisted } from "@/lib/token-blacklist";
 
 describe("token blacklist", () => {
   beforeEach(() => {

@@ -2,10 +2,10 @@ import Router from "@koa/router";
 import { loginBodySchema, refreshBodySchema, registerBodySchema } from "@whiteboard/shared/schemas";
 import { z } from "zod";
 
-import * as authController from "../controllers/auth-controller";
-import { authMiddleware } from "../middleware/auth";
-import { getClientIp, rateLimit } from "../middleware/rate-limit";
-import { validateBody } from "../middleware/validate";
+import * as authController from "@/controllers/auth-controller";
+import { authMiddleware } from "@/middleware/auth";
+import { getClientIp, rateLimit } from "@/middleware/rate-limit";
+import { validateBody } from "@/middleware/validate";
 
 const logoutBodySchema = z.object({
   refreshToken: z.string().min(1).optional(),

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { resetRedisForTests } from "../lib/redis";
+import { resetRedisForTests } from "@/lib/redis";
 
 const users = new Map<string, any>();
 
@@ -24,8 +24,8 @@ vi.mock("../repositories/user-repository", () => ({
   },
 }));
 
-import { verifyAccessToken } from "../lib/jwt";
-import { getMe, login, logout, refresh, register } from "./auth-service";
+import { verifyAccessToken } from "@/lib/jwt";
+import { getMe, login, logout, refresh, register } from "@/services/auth-service";
 
 describe("auth service", () => {
   beforeEach(() => {

@@ -4,12 +4,12 @@ import type {
   WhiteBoardSnapshot,
 } from "@whiteboard/shared/types";
 
-import type { Operation, Prisma } from "../../prisma/generated/client";
+import { AppError } from "@/lib/app-error";
+import { commitOperationAtomic, findOperationsAfter } from "@/repositories/operation-repository";
+import { findLatestSnapshotByBoardId } from "@/repositories/snapshot-repository";
+import { assertCanAccessBoard, assertCanEditBoard } from "@/services/boardsService";
 
-import { AppError } from "../lib/app-error";
-import { commitOperationAtomic, findOperationsAfter } from "../repositories/operation-repository";
-import { findLatestSnapshotByBoardId } from "../repositories/snapshot-repository";
-import { assertCanAccessBoard, assertCanEditBoard } from "./boardsService";
+import type { Operation, Prisma } from "../../prisma/generated/client";
 
 export interface BoardState {
   elements: WhiteBoardElement[];

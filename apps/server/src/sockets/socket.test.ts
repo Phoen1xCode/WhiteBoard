@@ -3,9 +3,10 @@ import { Server } from "socket.io";
 import { io as ioc, type Socket as ClientSocket } from "socket.io-client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { signTokenPair } from "@/lib/jwt";
+import { resetRedisForTests } from "@/lib/redis";
+
 import { PermissionRole } from "../../prisma/generated/client";
-import { signTokenPair } from "../lib/jwt";
-import { resetRedisForTests } from "../lib/redis";
 
 const users = new Map<string, any>([
   [
@@ -117,7 +118,7 @@ vi.mock("../repositories/snapshot-repository", () => ({
   findLatestSnapshotByBoardId: async () => null,
 }));
 
-import { initSocket } from "./socket";
+import { initSocket } from "@/sockets/socket";
 
 function listen(io: Server): Promise<{ port: number; close: () => Promise<void> }> {
   const httpServer = io.httpServer!;

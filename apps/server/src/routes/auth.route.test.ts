@@ -1,7 +1,7 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { resetRedisForTests } from "../lib/redis";
+import { resetRedisForTests } from "@/lib/redis";
 
 const users = new Map<string, any>();
 
@@ -25,9 +25,9 @@ vi.mock("../repositories/user-repository", () => ({
   },
 }));
 
-import { createApp } from "../app";
-import { verifyAccessToken } from "../lib/jwt";
-import { isTokenBlacklisted } from "../lib/token-blacklist";
+import { createApp } from "@/app";
+import { verifyAccessToken } from "@/lib/jwt";
+import { isTokenBlacklisted } from "@/lib/token-blacklist";
 
 describe("auth HTTP routes", () => {
   beforeEach(() => {
