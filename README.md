@@ -36,11 +36,6 @@
 - pnpm workspace
 - Docker Compose（web / server / postgres / redis）
 
-更完整的目标架构与重构计划见：
-
-- `docs/architecture-node-pnpm-koa-socketio.md`
-- `docs/refactor-from-fcca376-plan.md`
-
 ## 功能列表
 
 - [x] pnpm monorepo + shared 类型/schema
@@ -112,15 +107,11 @@ pnpm dev:web
 
 打开 http://localhost:5173 ，先注册/登录，再创建白板。未登录访问受保护路由会跳转登录页；未带 token 的 HTTP board API 返回 401，Socket 无 token 无法连接。
 
-### 测试
+### 类型检查
 
 ```bash
-pnpm test
-# 或
-pnpm --filter @whiteboard/server test
+pnpm typecheck
 ```
-
-集成测试默认使用内存 Redis（`REDIS_URL=memory://`），不强制本机 PostgreSQL。完整双客户端 E2E 需要本机 Postgres + Redis。
 
 ## 项目结构
 
@@ -142,11 +133,11 @@ WhiteBoard/
 │   │
 │   └── server/                   # 后端应用
 │       ├── src/
-│       │   ├── controllers/      # 控制器
-│       │   ├── services/         # 业务逻辑
-│       │   ├── repositories/     # 数据访问
-│       │   ├── routes/           # 路由定义
-│       │   ├── sockets/          # Socket.IO 事件
+│       │   ├── auth.ts / boards.ts / operations.ts
+│       │   ├── board-access.ts / board-state.ts
+│       │   ├── resolve-access-token.ts / collaboration.ts
+│       │   ├── routes/           # HTTP adapters
+│       │   ├── sockets/          # Socket.IO adapter
 │       │   ├── middleware/       # auth / rate-limit 等
 │       │   └── lib/              # jwt / redis / prisma
 │       ├── prisma/
@@ -167,7 +158,6 @@ WhiteBoard/
 │   ├── nginx.conf
 │   └── entrypoint.sh
 │
-├── docs/                         # 架构与重构计划
 ├── AGENTS.md                     # agent 项目记忆（CLAUDE.md 为其软链接）
 └── package.json                  # 根配置
 ```
