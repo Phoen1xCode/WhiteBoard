@@ -3,7 +3,6 @@ import type { AuthenticatedUser, JwtTokenPayload } from "@/types/auth";
 import { AppError } from "@/lib/app-error";
 import { verifyAccessToken } from "@/lib/jwt";
 import { prisma } from "@/lib/prisma";
-import { isTokenBlacklisted } from "@/lib/token-blacklist";
 
 export interface ResolvedAccess {
   token: string;
@@ -18,10 +17,6 @@ export async function resolveAccessToken(token: string): Promise<ResolvedAccess>
     payload = verifyAccessToken(token);
   } catch {
     throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
-  }
-
-  if (await isTokenBlacklisted(payload.jti)) {
-    throw new AppError(401, "UNAUTHORIZED", "Token revoked");
   }
 
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });

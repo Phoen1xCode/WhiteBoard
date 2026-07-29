@@ -1,6 +1,5 @@
 import type { Context, Middleware } from "koa";
 
-import { connectRedis } from "@/lib/redis";
 import { failure } from "@/lib/response";
 
 export interface RateLimitResult {
@@ -17,65 +16,8 @@ export interface RateLimitOptions {
   keyGenerator: (ctx: Context) => string | Promise<string>;
 }
 
-const slidingWindowScript = `
-local key = KEYS[1]
-local now = tonumber(ARGV[1])
-local window = tonumber(ARGV[2])
-local limit = tonumber(ARGV[3])
-local member = ARGV[4]
-
-redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
-local count = redis.call('ZCARD', key)
-
-if count >= limit then
-  local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
-  local retryAfter = window
-
-  if oldest[2] then
-    retryAfter = math.max(0, window - (now - tonumber(oldest[2])))
-  end
-
-  redis.call('PEXPIRE', key, window)
-  return {0, count, retryAfter}
-end
-
-redis.call('ZADD', key, now, member)
-redis.call('PEXPIRE', key, window)
-return {1, count + 1, 0}
-`;
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    return Number(value);
-  }
-
-  return Number.NaN;
-}
-
-function parseRateLimitResult(result: unknown, limit: number): RateLimitResult {
-  if (!Array.isArray(result) || result.length < 3) {
-    throw new Error("Invalid Redis rate-limit result");
-  }
-
-  const allowed = toNumber(result[0]) === 1;
-  const count = toNumber(result[1]);
-  const retryAfterMs = toNumber(result[2]);
-
-  if (!Number.isFinite(count) || !Number.isFinite(retryAfterMs)) {
-    throw new Error("Invalid Redis rate-limit result values");
-  }
-
-  return {
-    allowed,
-    limit,
-    remaining: Math.max(0, limit - count),
-    retryAfterMs,
-  };
-}
+/** In-process sliding window. Single-instance only. */
+const windows = new Map<string, number[]>();
 
 export function getClientIp(ctx: Context): string {
   return ctx.ip || ctx.request.ip || "unknown";
@@ -86,12 +28,29 @@ export async function checkRateLimit(
   limit: number,
   windowMs: number,
 ): Promise<RateLimitResult> {
-  const redis = await connectRedis();
   const now = Date.now();
-  const member = `${now}:${crypto.randomUUID()}`;
-  const result = await redis.eval(slidingWindowScript, 1, key, now, windowMs, limit, member);
+  const cutoff = now - windowMs;
+  const hits = (windows.get(key) ?? []).filter((t) => t > cutoff);
 
-  return parseRateLimitResult(result, limit);
+  if (hits.length >= limit) {
+    windows.set(key, hits);
+    const oldest = hits[0] ?? now;
+    return {
+      allowed: false,
+      limit,
+      remaining: 0,
+      retryAfterMs: Math.max(0, windowMs - (now - oldest)),
+    };
+  }
+
+  hits.push(now);
+  windows.set(key, hits);
+  return {
+    allowed: true,
+    limit,
+    remaining: Math.max(0, limit - hits.length),
+    retryAfterMs: 0,
+  };
 }
 
 export function rateLimit(options: RateLimitOptions): Middleware {
@@ -107,9 +66,8 @@ export function rateLimit(options: RateLimitOptions): Middleware {
     ctx.set("X-RateLimit-Remaining", String(result.remaining));
 
     if (!result.allowed) {
-      const retryAfterSeconds = Math.ceil(result.retryAfterMs / 1000);
       ctx.status = 429;
-      ctx.set("Retry-After", String(retryAfterSeconds));
+      ctx.set("Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
       ctx.body = failure("RATE_LIMITED", "Too many requests");
       return;
     }

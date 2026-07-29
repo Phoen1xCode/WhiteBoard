@@ -7,7 +7,6 @@ Koa + Socket.IO 后端。默认监听 `http://localhost:4000`。
 - Node.js >= 20.19
 - pnpm >= 11
 - PostgreSQL
-- Redis（本地可用 `memory://`）
 
 在**仓库根目录**安装依赖：
 
@@ -25,7 +24,6 @@ cp .env.example .env
 | --- | --- | --- |
 | `DATABASE_URL` | 是 | PostgreSQL 连接串 |
 | `PORT` | 否 | HTTP 端口，默认 `4000` |
-| `REDIS_URL` | 是 | Redis 地址；可用 `memory://` |
 | `JWT_ACCESS_SECRET` | 是 | access token 签名密钥 |
 | `JWT_REFRESH_SECRET` | 是 | refresh token 签名密钥 |
 | `JWT_ACCESS_EXPIRES_IN` | 否 | 默认 `15m` |
@@ -56,7 +54,7 @@ pnpm typecheck
 - `src/board-access.ts` / `src/board-state.ts`
 - `src/collaboration.ts` - presence + join/commit/replay
 - `src/routes/` / `src/sockets/socket.ts` - transport adapters
-- `src/lib/` / `src/middleware/` - 基础设施
+- `src/lib/` / `src/middleware/` - 基础设施（限流为进程内）
 
 事件名：`board:join` / `board:leave` / `cursor:update` / `operation:commit` / `operation:replay`。
 

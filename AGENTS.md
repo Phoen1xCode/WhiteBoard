@@ -7,7 +7,7 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - Runtime: Node.js + pnpm workspace. Do **not** reintroduce Bun runtime or Elysia.
 - HTTP: Koa. Realtime: Socket.IO.
 - DB: PostgreSQL + Prisma 7 (`apps/server/prisma`). Client output: `apps/server/prisma/generated`.
-- Redis: rate limit + JWT blacklist (`apps/server/src/lib/redis.ts`, supports `memory://`).
+- Rate limit: in-process sliding window (`middleware/rate-limit.ts`). No Redis.
 - Shared contracts: `packages/shared` (`@whiteboard/shared`).
 
 Server layout (flat domain modules, no controller/service/repository layers):
@@ -33,6 +33,7 @@ Server env template: `apps/server/.env.example` (real dotenv values, not Make sy
 ## Sharp edges
 
 - Board HTTP and Socket.IO both require JWT via `resolveAccessToken`. Socket auth via `handshake.auth.token`.
+- Logout disconnects sockets only; JWT stays valid until expiry (no server-side revocation store).
 - Operation path: authorize -> persist (atomic `boardId+seq`) -> ack submitter -> broadcast `operation:committed` to room.
 - Event names: `board:join` / `board:leave` / `cursor:update` / `operation:commit` / `operation:replay` (no legacy `join-board`/`op`).
 - HTTP responses use `{ success, data }` envelope (including boards).

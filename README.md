@@ -4,7 +4,7 @@
 
 ## 项目特点
 
-- 账号认证（JWT access/refresh + Redis 黑名单）
+- 账号认证（JWT access/refresh）
 - 白板权限：owner / editor / viewer
 - 多种绘图工具：自由线条、矩形、圆形、直线等
 - 实时协作：Socket.IO operation commit/ack/replay
@@ -28,13 +28,13 @@
 - Node.js + Koa + @koa/router
 - Socket.IO
 - PostgreSQL + Prisma
-- Redis（限流、JWT 黑名单；本地测试可用 `REDIS_URL=memory://`）
+- 进程内限流（单实例）
 - JWT（jsonwebtoken）
 
 ### 工程/运维
 
 - pnpm workspace
-- Docker Compose（web / server / postgres / redis）
+- Docker Compose（web / server / postgres）
 
 ## 功能列表
 
@@ -46,7 +46,7 @@
 - [x] 前端登录页、Bearer API、socket auth.token、断线 replay
 - [x] 基础绘图工具与 Konva UI
 - [ ] BatchWriter / snapshot compaction（后续）
-- [ ] 多实例 Socket.IO Redis adapter（后续）
+- [ ] 多实例部署（后续）
 
 ## 快速开始
 
@@ -55,7 +55,7 @@
 - Node.js >= 20.19（建议 20/22/24 LTS）
 - pnpm >= 11
 - PostgreSQL >= 14
-- Redis（生产/完整本地联调）；单测可用内存 Redis
+
 
 ### 安装步骤
 
@@ -71,7 +71,7 @@ pnpm install
 
 ```bash
 cp apps/server/.env.example apps/server/.env
-# 编辑 DATABASE_URL / REDIS_URL / JWT_* 密钥
+# 编辑 DATABASE_URL / JWT_* 密钥
 ```
 
 关键变量：
@@ -79,7 +79,6 @@ cp apps/server/.env.example apps/server/.env
 ```bash
 DATABASE_URL=postgresql://whiteboard:whiteboardpassword@localhost:5432/whiteboard
 PORT=4000
-REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=replace-with-a-long-random-access-secret
 JWT_REFRESH_SECRET=replace-with-a-long-random-refresh-secret
 ```
@@ -139,7 +138,7 @@ WhiteBoard/
 │       │   ├── routes/           # HTTP adapters
 │       │   ├── sockets/          # Socket.IO adapter
 │       │   ├── middleware/       # auth / rate-limit 等
-│       │   └── lib/              # jwt / redis / prisma
+│       │   └── lib/              # jwt / prisma
 │       ├── prisma/
 │       │   ├── schema.prisma     # 数据库模型
 │       │   └── migrations/       # 数据库迁移文件
@@ -187,7 +186,7 @@ WhiteBoard 采用前后端分离的 Monorepo 架构，通过 pnpm workspace 统�
                             ↕ Prisma ORM
 ┌─────────────────────────────────────────────────────────────┐
 │                    数据持久层 (PostgreSQL)                  │
-│          PostgreSQL + Redis（限流 / JWT 黑名单）           │
+│                     PostgreSQL                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -389,7 +388,7 @@ type ConnectionStatus = "connecting" | "connected" | "disconnected" | "reconnect
 | POST | `/api/v1/auth/register` | 注册                     |
 | POST | `/api/v1/auth/login`    | 登录（access + refresh） |
 | POST | `/api/v1/auth/refresh`  | 刷新 access              |
-| POST | `/api/v1/auth/logout`   | 登出（JWT 黑名单）       |
+| POST | `/api/v1/auth/logout`   | 登出（踢掉 Socket）      |
 | GET  | `/api/v1/auth/me`       | 当前用户                 |
 
 **白板（需登录；按 owner/editor/viewer 鉴权）：**
@@ -550,7 +549,6 @@ cd docker && docker-compose restart server
 | web      | 8080 | 前端 Nginx 服务                          |
 | server   | 3000 | 后端 API + WebSocket（容器内 PORT=3000） |
 | postgres | 5432 | PostgreSQL 数据库                        |
-| redis    | 6379 | 限流 + JWT 黑名单                        |
 
 ### Docker 文件结构
 

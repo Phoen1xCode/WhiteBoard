@@ -16,7 +16,7 @@ import {
   type CommittedOperation,
 } from "@/operations";
 
-/** In-process presence. Redis adapter when multi-instance lands. */
+/** In-process presence (single instance). */
 const boardMembers = new Map<string, Map<string, SocketUser>>();
 let ioRef: Server | null = null;
 

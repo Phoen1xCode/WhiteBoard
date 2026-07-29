@@ -5,7 +5,6 @@ import type { AuthResult, JwtTokenPayload, SafeUser } from "@/types/auth";
 import { AppError } from "@/lib/app-error";
 import { signTokenPair, verifyRefreshToken } from "@/lib/jwt";
 import { prisma } from "@/lib/prisma";
-import { blacklistToken, isTokenBlacklisted } from "@/lib/token-blacklist";
 
 import type { User } from "../prisma/generated/client";
 
@@ -65,32 +64,20 @@ export async function refresh(refreshToken: string): Promise<AuthResult> {
     throw new AppError(401, "UNAUTHORIZED", "Invalid refresh token");
   }
 
-  if (await isTokenBlacklisted(payload.jti)) {
-    throw new AppError(401, "UNAUTHORIZED", "Refresh token has been revoked");
-  }
-
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user) {
     throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
   }
 
-  await blacklistToken(payload.jti, payload.exp);
   return { user: toSafeUser(user), tokens: signTokenPair(user.id) };
 }
 
+/** Tokens stay valid until expiry; caller should disconnect sockets. */
 export async function logout(
-  accessTokenPayload: JwtTokenPayload,
-  refreshToken?: string,
+  _accessTokenPayload: JwtTokenPayload,
+  _refreshToken?: string,
 ): Promise<void> {
-  await blacklistToken(accessTokenPayload.jti, accessTokenPayload.exp);
-  if (!refreshToken) return;
-
-  try {
-    const refreshPayload = verifyRefreshToken(refreshToken);
-    await blacklistToken(refreshPayload.jti, refreshPayload.exp);
-  } catch {
-    // ignore invalid refresh on logout
-  }
+  // no server-side revocation store
 }
 
 export async function getMe(userId: string): Promise<SafeUser> {
