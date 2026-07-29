@@ -24,7 +24,7 @@ import { verifyAccessToken } from "@/lib/jwt";
 import { isTokenBlacklisted } from "@/lib/token-blacklist";
 import { checkRateLimit } from "@/middleware/rate-limit";
 import { findUserById } from "@/repositories/user-repository";
-import { assertCanAccessBoard, assertCanEditBoard } from "@/services/boardsService";
+import { assertCanAccessBoard } from "@/services/boardsService";
 import {
   commitOperation,
   getOperationsAfter,
@@ -248,9 +248,7 @@ export function initSocket(io: Server): void {
             return;
           }
 
-          await assertCanEditBoard(payload.boardId, user.id);
-
-          // authorize -> persist -> ack submitter -> broadcast others
+          // authorize + persist -> ack submitter -> broadcast others
           const committed = await commitOperation({
             boardId: payload.boardId,
             operation: payload.operation as WhiteBoardOperation,

@@ -1,3 +1,5 @@
+import type { WhiteBoardOperation } from "@whiteboard/shared/types";
+
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { io as ioc, type Socket as ClientSocket } from "socket.io-client";
@@ -61,16 +63,6 @@ vi.mock("../repositories/user-repository", () => ({
 
 vi.mock("../repositories/board-repository", () => ({
   findBoardById: async (id: string) => boards.get(id) ?? null,
-  findBoardSnapshotWithSeq: async (id: string) => {
-    const board = boards.get(id);
-    if (!board) return null;
-    return { board, lastSeq: seq || 0 };
-  },
-  updateBoardSnapshot: async (id: string, snapshot: unknown) => {
-    const board = boards.get(id);
-    board.snapshot = snapshot;
-    return board;
-  },
 }));
 
 vi.mock("../repositories/permission-repository", () => ({
@@ -78,45 +70,62 @@ vi.mock("../repositories/permission-repository", () => ({
     permissions.get(`${boardId}:${userId}`) ?? null,
 }));
 
-vi.mock("../repositories/operation-repository", () => ({
-  commitOperationAtomic: async (input: any) => {
-    if (input.clientOpId) {
-      const existing = operations.find(
-        (o) => o.boardId === input.boardId && o.clientOpId === input.clientOpId,
+vi.mock("../services/operation-service", async () => {
+  const { AppError } = await import("../lib/app-error");
+
+  return {
+    commitOperation: async (input: {
+      boardId: string;
+      userId: string;
+      operation: WhiteBoardOperation;
+      clientOpId?: string | null;
+    }) => {
+      const permission = permissions.get(`${input.boardId}:${input.userId}`);
+      if (permission?.role !== PermissionRole.OWNER && permission?.role !== PermissionRole.EDITOR) {
+        throw new AppError(403, "FORBIDDEN", "Editor permission is required");
+      }
+
+      if (input.clientOpId) {
+        const existing = operations.find(
+          (operation) =>
+            operation.boardId === input.boardId && operation.clientOpId === input.clientOpId,
+        );
+        if (existing) {
+          return { ...existing, created: false };
+        }
+      }
+
+      seq += 1;
+      const operation = {
+        id: `op-${seq}`,
+        boardId: input.boardId,
+        userId: input.userId,
+        seq,
+        opType: input.operation.type,
+        elementId:
+          input.operation.type === "add"
+            ? input.operation.element.id
+            : input.operation.type === "clear"
+              ? null
+              : input.operation.elementId,
+        clientOpId: input.clientOpId ?? null,
+        payload: input.operation,
+        createdAt: new Date().toISOString(),
+        created: true,
+      };
+      operations.push(operation);
+      return operation;
+    },
+    getOperationsAfter: async (boardId: string, fromSeq: number, userId: string) => {
+      if (!permissions.has(`${boardId}:${userId}`)) {
+        throw new AppError(403, "FORBIDDEN", "No permission to access this board");
+      }
+      return operations.filter(
+        (operation) => operation.boardId === boardId && operation.seq > fromSeq,
       );
-      if (existing) return { operation: existing, created: false };
-    }
-
-    seq += 1;
-    const board = boards.get(input.boardId);
-    if (board && typeof input.buildNextSnapshot === "function") {
-      board.snapshot = input.buildNextSnapshot(board.snapshot);
-    }
-
-    const record = {
-      id: `op-${seq}`,
-      boardId: input.boardId,
-      userId: input.userId,
-      seq,
-      opType: input.opType,
-      elementId: input.elementId,
-      clientOpId: input.clientOpId,
-      payload: input.payload,
-      createdAt: new Date(),
-    };
-    operations.push(record);
-    return { operation: record, created: true };
-  },
-  findOperationByClientOpId: async (boardId: string, clientOpId: string) =>
-    operations.find((o) => o.boardId === boardId && o.clientOpId === clientOpId) ?? null,
-  findOperationsAfter: async (boardId: string, fromSeq: number) =>
-    operations.filter((o) => o.boardId === boardId && o.seq > fromSeq),
-  findLatestOperationSeq: async () => seq || null,
-}));
-
-vi.mock("../repositories/snapshot-repository", () => ({
-  findLatestSnapshotByBoardId: async () => null,
-}));
+    },
+  };
+});
 
 import { initSocket } from "@/sockets/socket";
 

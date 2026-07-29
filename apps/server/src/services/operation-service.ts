@@ -1,17 +1,14 @@
-import type {
-  WhiteBoardElement,
-  WhiteBoardOperation,
-  WhiteBoardSnapshot,
-} from "@whiteboard/shared/types";
+import type { WhiteBoardElement, WhiteBoardOperation } from "@whiteboard/shared/types";
+
+import { whiteBoardElementSchema, whiteBoardOperationSchema } from "@whiteboard/shared/schemas";
 
 import { AppError } from "@/lib/app-error";
-import { commitOperationAtomic, findOperationsAfter } from "@/repositories/operation-repository";
-import { findLatestSnapshotByBoardId } from "@/repositories/snapshot-repository";
+import { prisma } from "@/lib/prisma";
 import { assertCanAccessBoard, assertCanEditBoard } from "@/services/boardsService";
 
 import type { Operation, Prisma } from "../../prisma/generated/client";
 
-export interface BoardState {
+interface BoardState {
   elements: WhiteBoardElement[];
 }
 
@@ -39,37 +36,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function isShapeType(value: unknown): boolean {
-  return (
-    value === "freehand" ||
-    value === "rectangle" ||
-    value === "circle" ||
-    value === "line" ||
-    value === "text" ||
-    value === "select" ||
-    value === "eraser"
-  );
-}
-
-function isWhiteBoardElement(value: unknown): value is WhiteBoardElement {
-  if (!isObject(value)) {
-    return false;
-  }
-
-  return (
-    typeof value.id === "string" &&
-    isShapeType(value.type) &&
-    typeof value.x === "number" &&
-    typeof value.y === "number" &&
-    typeof value.strokeColor === "string" &&
-    typeof value.strokeWidth === "number"
-  );
-}
-
-function isPartialElementChanges(value: unknown): value is Partial<WhiteBoardElement> {
-  return isObject(value);
-}
-
 function getElementId(operation: WhiteBoardOperation): string | null {
   switch (operation.type) {
     case "add":
@@ -87,7 +53,10 @@ function getSnapshotElements(snapshot: unknown): WhiteBoardElement[] {
     return [];
   }
 
-  return snapshot.elements.filter(isWhiteBoardElement);
+  return snapshot.elements.flatMap((element) => {
+    const result = whiteBoardElementSchema.safeParse(element);
+    return result.success ? [result.data as WhiteBoardElement] : [];
+  });
 }
 
 function operationToRecord(operation: Operation, created = true): CommittedOperation {
@@ -105,66 +74,20 @@ function operationToRecord(operation: Operation, created = true): CommittedOpera
   };
 }
 
-export function validateOperationPayload(
-  payload: unknown,
-  expectedBoardId?: string,
-): WhiteBoardOperation {
-  if (!isObject(payload) || typeof payload.type !== "string") {
+function validateOperationPayload(payload: unknown, expectedBoardId?: string): WhiteBoardOperation {
+  const result = whiteBoardOperationSchema.safeParse(payload);
+  if (!result.success) {
     throw new AppError(400, "INVALID_OPERATION", "Invalid operation payload");
   }
 
-  if (typeof payload.boardId !== "string") {
-    throw new AppError(400, "INVALID_OPERATION", "Operation boardId is required");
-  }
-
-  if (expectedBoardId && payload.boardId !== expectedBoardId) {
+  if (expectedBoardId && result.data.boardId !== expectedBoardId) {
     throw new AppError(400, "INVALID_OPERATION", "Operation boardId mismatch");
   }
 
-  switch (payload.type) {
-    case "add":
-      if (!isWhiteBoardElement(payload.element)) {
-        throw new AppError(400, "INVALID_OPERATION", "Add operation element is invalid");
-      }
-      return {
-        type: "add",
-        boardId: payload.boardId,
-        element: payload.element,
-      };
-
-    case "update":
-      if (typeof payload.elementId !== "string" || !isPartialElementChanges(payload.changes)) {
-        throw new AppError(400, "INVALID_OPERATION", "Update operation payload is invalid");
-      }
-      return {
-        type: "update",
-        boardId: payload.boardId,
-        elementId: payload.elementId,
-        changes: payload.changes,
-      };
-
-    case "delete":
-      if (typeof payload.elementId !== "string") {
-        throw new AppError(400, "INVALID_OPERATION", "Delete operation elementId is invalid");
-      }
-      return {
-        type: "delete",
-        boardId: payload.boardId,
-        elementId: payload.elementId,
-      };
-
-    case "clear":
-      return {
-        type: "clear",
-        boardId: payload.boardId,
-      };
-
-    default:
-      throw new AppError(400, "INVALID_OPERATION", "Unsupported operation type");
-  }
+  return result.data as WhiteBoardOperation;
 }
 
-export function replayOps(snapshot: BoardState, operations: WhiteBoardOperation[]): BoardState {
+function replayOps(snapshot: BoardState, operations: WhiteBoardOperation[]): BoardState {
   const elementsMap: Record<string, WhiteBoardElement> = {};
 
   snapshot.elements.forEach((element) => {
@@ -201,23 +124,104 @@ export function replayOps(snapshot: BoardState, operations: WhiteBoardOperation[
   return { elements: Object.values(elementsMap) };
 }
 
+async function findPersistedOperationsAfter(boardId: string, seq: number): Promise<Operation[]> {
+  return await prisma.operation.findMany({
+    where: {
+      boardId,
+      seq: { gt: seq },
+    },
+    orderBy: { seq: "asc" },
+  });
+}
+
+async function findOperationByClientOpId(
+  boardId: string,
+  clientOpId: string,
+): Promise<Operation | null> {
+  return await prisma.operation.findFirst({
+    where: { boardId, clientOpId },
+  });
+}
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
+  );
+}
+
+async function persistOperationAtomic(
+  input: CommitOperationInput & { operation: WhiteBoardOperation },
+): Promise<{ operation: Operation; created: boolean }> {
+  try {
+    return await prisma.$transaction(async (transaction) => {
+      const locked = await transaction.$queryRaw<Array<{ id: string; snapshot: unknown }>>`
+        SELECT id, snapshot FROM "Board" WHERE id = ${input.boardId} FOR UPDATE
+      `;
+
+      const board = locked[0];
+      if (!board) {
+        throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
+      }
+
+      if (input.clientOpId) {
+        const existing = await transaction.operation.findFirst({
+          where: { boardId: input.boardId, clientOpId: input.clientOpId },
+        });
+        if (existing) {
+          return { operation: existing, created: false };
+        }
+      }
+
+      const latest = await transaction.operation.findFirst({
+        where: { boardId: input.boardId },
+        orderBy: { seq: "desc" },
+        select: { seq: true },
+      });
+      const seq = (latest?.seq ?? 0) + 1;
+
+      const operation = await transaction.operation.create({
+        data: {
+          boardId: input.boardId,
+          seq,
+          opType: input.operation.type,
+          payload: input.operation as unknown as Prisma.InputJsonValue,
+          userId: input.userId,
+          elementId: getElementId(input.operation),
+          clientOpId: input.clientOpId ?? null,
+        },
+      });
+
+      const nextState = replayOps({ elements: getSnapshotElements(board.snapshot) }, [
+        input.operation,
+      ]);
+      await transaction.board.update({
+        where: { id: input.boardId },
+        data: {
+          snapshot: { elements: nextState.elements } as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      return { operation, created: true };
+    });
+  } catch (error) {
+    if (input.clientOpId && isUniqueConstraintError(error)) {
+      const existing = await findOperationByClientOpId(input.boardId, input.clientOpId);
+      if (existing) {
+        return { operation: existing, created: false };
+      }
+    }
+    throw error;
+  }
+}
+
 export async function commitOperation(input: CommitOperationInput): Promise<CommittedOperation> {
   const operation = validateOperationPayload(input.operation, input.boardId);
   await assertCanEditBoard(input.boardId, input.userId);
 
-  const result = await commitOperationAtomic({
-    boardId: input.boardId,
-    userId: input.userId,
-    opType: operation.type,
-    elementId: getElementId(operation),
-    clientOpId: input.clientOpId ?? null,
-    payload: operation as unknown as Prisma.InputJsonValue,
-    buildNextSnapshot: (currentSnapshot) => {
-      const nextState = replayOps({ elements: getSnapshotElements(currentSnapshot) }, [operation]);
-      return { elements: nextState.elements } as unknown as Prisma.InputJsonValue;
-    },
-  });
-
+  const result = await persistOperationAtomic({ ...input, operation });
   return operationToRecord(result.operation, result.created);
 }
 
@@ -227,28 +231,6 @@ export async function getOperationsAfter(
   userId: string,
 ): Promise<CommittedOperation[]> {
   await assertCanAccessBoard(boardId, userId);
-  const operations = await findOperationsAfter(boardId, fromSeq);
+  const operations = await findPersistedOperationsAfter(boardId, fromSeq);
   return operations.map((operation) => operationToRecord(operation));
-}
-
-export async function replayBoard(boardId: string, userId: string): Promise<WhiteBoardSnapshot> {
-  const board = await assertCanAccessBoard(boardId, userId);
-  const latestSnapshot = await findLatestSnapshotByBoardId(boardId);
-  const operations = await findOperationsAfter(boardId, latestSnapshot?.seq ?? 0);
-  const operationPayloads = operations.map((operation) =>
-    validateOperationPayload(operation.payload, boardId),
-  );
-  const baseState = latestSnapshot
-    ? { elements: getSnapshotElements(latestSnapshot.state) }
-    : operations.length > 0
-      ? { elements: [] }
-      : { elements: getSnapshotElements(board.snapshot) };
-  const state = replayOps(baseState, operationPayloads);
-
-  return {
-    id: board.id,
-    title: board.title,
-    elements: state.elements,
-    updatedAt: board.updatedAt.toISOString(),
-  };
 }
