@@ -2,10 +2,8 @@ import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 import type {
   AckResult,
   BoardJoinedPayload,
-  CommittedOperationPayload,
   OperationAckPayload,
   OperationReplayResultPayload,
-  SocketUser,
 } from "@whiteboard/shared/types/socket";
 import type { Server, Socket } from "socket.io";
 
@@ -19,105 +17,49 @@ import { ZodError } from "zod";
 
 import type { AuthenticatedUser } from "@/types/auth";
 
-import { isAppError } from "@/lib/app-error";
-import { verifyAccessToken } from "@/lib/jwt";
-import { isTokenBlacklisted } from "@/lib/token-blacklist";
-import { checkRateLimit } from "@/middleware/rate-limit";
-import { findUserById } from "@/repositories/user-repository";
-import { assertCanAccessBoard } from "@/services/boardsService";
 import {
-  commitOperation,
-  getOperationsAfter,
-  type CommittedOperation,
-} from "@/services/operation-service";
+  bindIo,
+  boardRoom,
+  commitOnBoard,
+  isPresent,
+  joinBoard,
+  leaveBoard,
+  listPresentBoardIds,
+  replayOnBoard,
+  userRoom,
+} from "@/collaboration";
+import { isAppError } from "@/lib/app-error";
+import { checkRateLimit } from "@/middleware/rate-limit";
+import { resolveAccessToken } from "@/resolve-access-token";
 
-type AuthedSocket = Socket & {
-  data: {
-    user: AuthenticatedUser;
-    joinedBoards: Set<string>;
-  };
-};
-
-const boardMembers = new Map<string, Map<string, SocketUser>>();
-let ioRef: Server | null = null;
-
-function toSocketUser(user: AuthenticatedUser): SocketUser {
-  return {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-  };
-}
-
-function roomName(boardId: string): string {
-  return `board:${boardId}`;
-}
-
-function userRoom(userId: string): string {
-  return `user:${userId}`;
-}
-
-function getBoardMemberMap(boardId: string): Map<string, SocketUser> {
-  let members = boardMembers.get(boardId);
-  if (!members) {
-    members = new Map();
-    boardMembers.set(boardId, members);
-  }
-  return members;
-}
-
-function toCommittedPayload(operation: CommittedOperation): CommittedOperationPayload {
-  return {
-    id: operation.id,
-    boardId: operation.boardId,
-    userId: operation.userId,
-    seq: operation.seq,
-    opType: operation.opType,
-    elementId: operation.elementId,
-    clientOpId: operation.clientOpId,
-    payload: operation.payload,
-    createdAt: operation.createdAt,
-  };
-}
+type AuthedSocket = Socket & { data: { user: AuthenticatedUser } };
 
 function errorAck(code: string, message: string, retryAfterMs?: number): AckResult<never> {
-  return {
-    ok: false,
-    error: { code, message, retryAfterMs },
-  };
-}
-
-function formatZodMessage(error: ZodError): string {
-  return error.issues
-    .map((issue) => `${issue.path.join(".") || "payload"}: ${issue.message}`)
-    .join("; ");
+  return { ok: false, error: { code, message, retryAfterMs } };
 }
 
 function mapError(error: unknown): AckResult<never> {
   if (isAppError(error)) {
     return errorAck(error.code, error.message);
   }
-
   if (error instanceof ZodError) {
-    return errorAck("VALIDATION_ERROR", formatZodMessage(error));
+    const message = error.issues
+      .map((issue) => `${issue.path.join(".") || "payload"}: ${issue.message}`)
+      .join("; ");
+    return errorAck("VALIDATION_ERROR", message);
   }
-
   console.error("Socket handler error:", error);
   return errorAck("INTERNAL_SERVER_ERROR", "Internal server error");
 }
 
-async function enforceSocketRateLimit(
-  socket: Socket,
+async function rateLimitOrAck(
   key: string,
   limit: number,
   windowMs: number,
 ): Promise<AckResult<never> | null> {
   try {
     const result = await checkRateLimit(key, limit, windowMs);
-    if (result.allowed) {
-      return null;
-    }
-
+    if (result.allowed) return null;
     return errorAck("RATE_LIMITED", "Too many requests", result.retryAfterMs);
   } catch (error) {
     console.error("Socket rate limit failed:", error);
@@ -125,48 +67,31 @@ async function enforceSocketRateLimit(
   }
 }
 
-async function authenticateSocket(socket: Socket): Promise<AuthenticatedUser> {
-  const token =
-    typeof socket.handshake.auth?.token === "string"
-      ? socket.handshake.auth.token
-      : typeof socket.handshake.headers.authorization === "string" &&
-          socket.handshake.headers.authorization.startsWith("Bearer ")
-        ? socket.handshake.headers.authorization.slice("Bearer ".length)
-        : null;
-
-  if (!token) {
-    throw new Error("Missing auth token");
+function extractToken(socket: Socket): string | null {
+  if (typeof socket.handshake.auth?.token === "string") {
+    return socket.handshake.auth.token;
   }
-
-  const payload = verifyAccessToken(token);
-  if (await isTokenBlacklisted(payload.jti)) {
-    throw new Error("Token revoked");
+  const header = socket.handshake.headers.authorization;
+  if (typeof header === "string" && header.startsWith("Bearer ")) {
+    return header.slice("Bearer ".length);
   }
-
-  const user = await findUserById(payload.sub);
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  return {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-  };
+  return null;
 }
 
-export function disconnectUserSockets(userId: string): void {
-  ioRef?.in(userRoom(userId)).disconnectSockets(true);
-}
+export { disconnectUserSockets } from "@/collaboration";
 
 export function initSocket(io: Server): void {
-  ioRef = io;
+  bindIo(io);
 
   io.use(async (socket, next) => {
     try {
-      const user = await authenticateSocket(socket);
+      const token = extractToken(socket);
+      if (!token) {
+        next(new Error("UNAUTHORIZED"));
+        return;
+      }
+      const { user } = await resolveAccessToken(token);
       (socket as AuthedSocket).data.user = user;
-      (socket as AuthedSocket).data.joinedBoards = new Set();
       next();
     } catch {
       next(new Error("UNAUTHORIZED"));
@@ -176,10 +101,6 @@ export function initSocket(io: Server): void {
   io.on("connection", (rawSocket: Socket) => {
     const socket = rawSocket as AuthedSocket;
     const user = socket.data.user;
-    if (!socket.data.joinedBoards) {
-      socket.data.joinedBoards = new Set();
-    }
-
     void socket.join(userRoom(user.id));
 
     socket.on(
@@ -187,25 +108,18 @@ export function initSocket(io: Server): void {
       async (rawPayload: unknown, ack?: (result: AckResult<BoardJoinedPayload>) => void) => {
         try {
           const payload = boardJoinSchema.parse(rawPayload);
-          await assertCanAccessBoard(payload.boardId, user.id);
-
-          const room = roomName(payload.boardId);
+          const joined = await joinBoard({
+            boardId: payload.boardId,
+            user,
+            socketId: socket.id,
+          });
+          const room = boardRoom(payload.boardId);
           await socket.join(room);
-          socket.data.joinedBoards.add(payload.boardId);
-
-          const members = getBoardMemberMap(payload.boardId);
-          members.set(socket.id, toSocketUser(user));
-
           socket.to(room).emit("board:user-joined", {
             boardId: payload.boardId,
-            user: toSocketUser(user),
+            user: joined.user,
           });
-
-          const response: BoardJoinedPayload = {
-            boardId: payload.boardId,
-            user: toSocketUser(user),
-            members: [...members.values()],
-          };
+          const response: BoardJoinedPayload = joined;
           ack?.({ ok: true, ...response });
           socket.emit("board:joined", response);
         } catch (error) {
@@ -219,7 +133,13 @@ export function initSocket(io: Server): void {
     socket.on("board:leave", async (rawPayload: unknown) => {
       try {
         const payload = boardJoinSchema.parse(rawPayload);
-        await leaveBoard(socket, payload.boardId);
+        const left = leaveBoard({
+          boardId: payload.boardId,
+          userId: user.id,
+          socketId: socket.id,
+        });
+        await socket.leave(boardRoom(payload.boardId));
+        socket.to(boardRoom(payload.boardId)).emit("board:user-left", left);
       } catch (error) {
         socket.emit("error", mapError(error).error);
       }
@@ -230,44 +150,27 @@ export function initSocket(io: Server): void {
       async (rawPayload: unknown, ack?: (result: AckResult<OperationAckPayload>) => void) => {
         try {
           const payload = operationCommitSchema.parse(rawPayload);
-
-          if (!socket.data.joinedBoards.has(payload.boardId)) {
-            const result = errorAck("NOT_JOINED", "Join the board before committing");
-            ack?.(result);
-            return;
-          }
-
-          const rateLimited = await enforceSocketRateLimit(
-            socket,
+          const limited = await rateLimitOrAck(
             `rate:board:${payload.boardId}:user:${user.id}:op`,
             60,
             1_000,
           );
-          if (rateLimited) {
-            ack?.(rateLimited);
+          if (limited) {
+            ack?.(limited);
             return;
           }
 
-          // authorize + persist -> ack submitter -> broadcast others
-          const committed = await commitOperation({
+          const { ack: ackPayload, broadcast } = await commitOnBoard({
             boardId: payload.boardId,
-            operation: payload.operation as WhiteBoardOperation,
             userId: user.id,
+            socketId: socket.id,
+            operation: payload.operation as WhiteBoardOperation,
             clientOpId: payload.clientOpId ?? null,
           });
 
-          const operationPayload = toCommittedPayload(committed);
-          const ackPayload: OperationAckPayload = {
-            ok: true,
-            clientOpId: committed.clientOpId,
-            seq: committed.seq,
-            serverTime: new Date().toISOString(),
-            operation: operationPayload,
-          };
-
           ack?.(ackPayload);
-          if (committed.created) {
-            socket.to(roomName(payload.boardId)).emit("operation:committed", operationPayload);
+          if (broadcast) {
+            socket.to(boardRoom(payload.boardId)).emit("operation:committed", broadcast);
           }
         } catch (error) {
           const result = mapError(error);
@@ -285,12 +188,11 @@ export function initSocket(io: Server): void {
       ) => {
         try {
           const payload = operationReplaySchema.parse(rawPayload);
-          const operations = await getOperationsAfter(payload.boardId, payload.fromSeq, user.id);
-          const response: OperationReplayResultPayload = {
+          const response = await replayOnBoard({
             boardId: payload.boardId,
+            userId: user.id,
             fromSeq: payload.fromSeq,
-            operations: operations.map(toCommittedPayload),
-          };
+          });
           ack?.({ ok: true, ...response });
           socket.emit("operation:replayed", response);
         } catch (error) {
@@ -304,21 +206,16 @@ export function initSocket(io: Server): void {
     socket.on("cursor:update", async (rawPayload: unknown) => {
       try {
         const payload = cursorUpdateSchema.parse(rawPayload);
-        if (!socket.data.joinedBoards.has(payload.boardId)) {
-          return;
-        }
+        if (!isPresent(payload.boardId, socket.id)) return;
 
-        const rateLimited = await enforceSocketRateLimit(
-          socket,
+        const limited = await rateLimitOrAck(
           `rate:board:${payload.boardId}:user:${user.id}:cursor`,
           30,
           1_000,
         );
-        if (rateLimited) {
-          return;
-        }
+        if (limited) return;
 
-        socket.to(roomName(payload.boardId)).emit("cursor:updated", {
+        socket.to(boardRoom(payload.boardId)).emit("cursor:updated", {
           boardId: payload.boardId,
           userId: user.id,
           username: user.username,
@@ -332,30 +229,11 @@ export function initSocket(io: Server): void {
     });
 
     socket.on("disconnect", async () => {
-      const boardIds = [...socket.data.joinedBoards];
-      for (const boardId of boardIds) {
-        await leaveBoard(socket, boardId);
+      for (const boardId of listPresentBoardIds(socket.id)) {
+        const left = leaveBoard({ boardId, userId: user.id, socketId: socket.id });
+        await socket.leave(boardRoom(boardId));
+        socket.to(boardRoom(boardId)).emit("board:user-left", left);
       }
     });
-  });
-}
-
-async function leaveBoard(socket: AuthedSocket, boardId: string): Promise<void> {
-  const room = roomName(boardId);
-  await socket.leave(room);
-  socket.data.joinedBoards.delete(boardId);
-
-  const members = boardMembers.get(boardId);
-  if (members) {
-    members.delete(socket.id);
-    if (members.size === 0) {
-      boardMembers.delete(boardId);
-    }
-  }
-
-  socket.to(room).emit("board:user-left", {
-    boardId,
-    userId: socket.data.user.id,
-    socketId: socket.id,
   });
 }
