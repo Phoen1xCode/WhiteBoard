@@ -1,24 +1,22 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
-import { fail } from "@/lib/api-envelope";
-import { auth } from "@/lib/auth";
-import { errorHandler } from "@/middleware/error";
-import { createAuthRouter } from "@/routes/auth";
-import { createBoardsRouter } from "@/routes/boards";
+import { errorBody, errorHandler } from "@/shared/http/error-handler";
 
-import "@/types/hono";
+export interface AppDeps {
+  authRouter: Hono;
+  boardsRouter: Hono;
+}
 
-export function createApp(): Hono {
+export function createApp({ authRouter, boardsRouter }: AppDeps): Hono {
   const app = new Hono();
 
   app.use(cors());
-  app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
-  app.route("/", createAuthRouter());
-  app.route("/", createBoardsRouter());
+  app.route("/", authRouter);
+  app.route("/", boardsRouter);
 
   app.onError(errorHandler);
-  app.notFound((c) => c.json(fail("NOT_FOUND", "Not Found"), 404));
+  app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not Found"), 404));
 
   return app;
 }

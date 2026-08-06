@@ -15,22 +15,13 @@ import {
 } from "@whiteboard/shared/schemas";
 import { ZodError } from "zod";
 
-import type { AuthenticatedUser } from "@/types/auth";
+import type { AuthenticatedUser } from "@/modules/auth/auth.types";
+import type { ResolveAccessToken } from "@/modules/auth/token";
+import type { Collaboration } from "@/modules/realtime/collaboration";
 
-import {
-  bindIo,
-  boardRoom,
-  commitOnBoard,
-  isPresent,
-  joinBoard,
-  leaveBoard,
-  listPresentBoardIds,
-  replayOnBoard,
-  userRoom,
-} from "@/collaboration";
-import { isApiError } from "@/lib/api-error";
-import { checkRateLimit } from "@/middleware/rate-limit";
-import { resolveAccessToken } from "@/resolve-access-token";
+import { boardRoom, userRoom, type Presence } from "@/modules/realtime/presence";
+import { isApiError } from "@/shared/api-error";
+import { checkRateLimit } from "@/shared/rate-limit";
 
 type AuthedSocket = Socket & { data: { user: AuthenticatedUser } };
 
@@ -78,11 +69,16 @@ function extractToken(socket: Socket): string | null {
   return null;
 }
 
-export { disconnectUserSockets } from "@/collaboration";
+export interface SocketServerDeps {
+  presence: Presence;
+  collaboration: Collaboration;
+  resolveAccessToken: ResolveAccessToken;
+}
 
-export function initSocket(io: Server): void {
-  bindIo(io);
-
+export function createSocketServer(
+  io: Server,
+  { presence, collaboration, resolveAccessToken }: SocketServerDeps,
+) {
   io.use(async (socket, next) => {
     try {
       const token = extractToken(socket);
@@ -108,7 +104,7 @@ export function initSocket(io: Server): void {
       async (rawPayload: unknown, ack?: (result: AckResult<BoardJoinedPayload>) => void) => {
         try {
           const payload = boardJoinSchema.parse(rawPayload);
-          const joined = await joinBoard({
+          const joined = await presence.joinBoard({
             boardId: payload.boardId,
             user,
             socketId: socket.id,
@@ -133,7 +129,7 @@ export function initSocket(io: Server): void {
     socket.on("board:leave", async (rawPayload: unknown) => {
       try {
         const payload = boardJoinSchema.parse(rawPayload);
-        const left = leaveBoard({
+        const left = presence.leaveBoard({
           boardId: payload.boardId,
           userId: user.id,
           socketId: socket.id,
@@ -160,7 +156,7 @@ export function initSocket(io: Server): void {
             return;
           }
 
-          const { ack: ackPayload, broadcast } = await commitOnBoard({
+          const { ack: ackPayload, broadcast } = await collaboration.commitOnBoard({
             boardId: payload.boardId,
             userId: user.id,
             socketId: socket.id,
@@ -188,7 +184,7 @@ export function initSocket(io: Server): void {
       ) => {
         try {
           const payload = operationReplaySchema.parse(rawPayload);
-          const response = await replayOnBoard({
+          const response = await collaboration.replayOnBoard({
             boardId: payload.boardId,
             userId: user.id,
             fromSeq: payload.fromSeq,
@@ -206,7 +202,7 @@ export function initSocket(io: Server): void {
     socket.on("cursor:update", async (rawPayload: unknown) => {
       try {
         const payload = cursorUpdateSchema.parse(rawPayload);
-        if (!isPresent(payload.boardId, socket.id)) return;
+        if (!presence.isPresent(payload.boardId, socket.id)) return;
 
         const limited = await rateLimitOrAck(
           `rate:board:${payload.boardId}:user:${user.id}:cursor`,
@@ -229,11 +225,17 @@ export function initSocket(io: Server): void {
     });
 
     socket.on("disconnect", async () => {
-      for (const boardId of listPresentBoardIds(socket.id)) {
-        const left = leaveBoard({ boardId, userId: user.id, socketId: socket.id });
+      for (const boardId of presence.listPresentBoardIds(socket.id)) {
+        const left = presence.leaveBoard({ boardId, userId: user.id, socketId: socket.id });
         await socket.leave(boardRoom(boardId));
         socket.to(boardRoom(boardId)).emit("board:user-left", left);
       }
     });
   });
+
+  return {
+    disconnectUserSockets(userId: string): void {
+      void io.in(userRoom(userId)).disconnectSockets(true);
+    },
+  };
 }

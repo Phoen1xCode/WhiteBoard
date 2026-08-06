@@ -1,11 +1,11 @@
-import { Hono } from "hono";
 import { createBoardBodySchema, updateBoardTitleBodySchema } from "@whiteboard/shared/schemas";
+import { Hono } from "hono";
 
-import * as boards from "@/boards";
-import { ok } from "@/lib/api-envelope";
-import { authMiddleware } from "@/middleware/auth";
-import { getClientIp, rateLimit } from "@/middleware/rate-limit";
-import { validateBody } from "@/middleware/validate";
+import type { AuthMiddleware } from "@/modules/auth/auth.middleware";
+import type { BoardsService } from "@/modules/boards/boards.service";
+
+import { validateBody } from "@/shared/http/validate";
+import { getClientIp, rateLimit } from "@/shared/rate-limit";
 
 const createBoardRateLimit = rateLimit({
   keyPrefix: "rate:user:board:create",
@@ -14,11 +14,17 @@ const createBoardRateLimit = rateLimit({
   keyGenerator: (c) => c.get("user")?.id ?? getClientIp(c),
 });
 
-export function createBoardsRouter(): Hono {
+export function createBoardsRouter({
+  boardsService,
+  authMiddleware,
+}: {
+  boardsService: BoardsService;
+  authMiddleware: AuthMiddleware;
+}): Hono {
   const router = new Hono();
 
   router.get("/api/v1/boards", authMiddleware, async (c) => {
-    return c.json(ok(await boards.listBoards(c.get("user").id)));
+    return c.json(await boardsService.listBoards(c.get("user").id));
   });
 
   router.post(
@@ -28,12 +34,15 @@ export function createBoardsRouter(): Hono {
     validateBody(createBoardBodySchema),
     async (c) => {
       const { title } = c.req.valid("json");
-      return c.json(ok(await boards.createBoard(title ?? "Untitled Board", c.get("user").id)), 201);
+      return c.json(
+        await boardsService.createBoard(title ?? "Untitled Board", c.get("user").id),
+        201,
+      );
     },
   );
 
   router.get("/api/v1/boards/:id", authMiddleware, async (c) => {
-    return c.json(ok(await boards.getBoard(c.req.param("id"), c.get("user").id)));
+    return c.json(await boardsService.getBoard(c.req.param("id"), c.get("user").id));
   });
 
   router.patch(
@@ -43,13 +52,13 @@ export function createBoardsRouter(): Hono {
     async (c) => {
       const { title } = c.req.valid("json");
       return c.json(
-        ok(await boards.updateBoardTitle(c.req.param("id"), title, c.get("user").id)),
+        await boardsService.updateBoardTitle(c.req.param("id"), title, c.get("user").id),
       );
     },
   );
 
   router.delete("/api/v1/boards/:id", authMiddleware, async (c) => {
-    await boards.deleteBoard(c.req.param("id"), c.get("user").id);
+    await boardsService.deleteBoard(c.req.param("id"), c.get("user").id);
     return c.body(null, 204);
   });
 

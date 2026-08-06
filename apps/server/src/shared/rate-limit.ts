@@ -1,7 +1,5 @@
 import type { Context, MiddlewareHandler } from "hono";
 
-import { fail } from "@/lib/api-envelope";
-
 export interface RateLimitResult {
   allowed: boolean;
   limit: number;
@@ -67,7 +65,7 @@ export function rateLimit(options: RateLimitOptions): MiddlewareHandler {
 
     if (!result.allowed) {
       c.header("Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
-      return c.json(fail("RATE_LIMITED", "Too many requests"), 429);
+      return c.json({ error: { code: "RATE_LIMITED", message: "Too many requests" } }, 429);
     }
 
     await next();

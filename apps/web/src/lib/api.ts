@@ -29,13 +29,7 @@ export interface AuthResult {
   tokens: TokenPair;
 }
 
-interface ApiSuccess<T> {
-  success: true;
-  data: T;
-}
-
 interface ApiFailure {
-  success: false;
   error: { code: string; message: string };
 }
 
@@ -58,9 +52,9 @@ export async function refreshAccessToken(): Promise<string | null> {
     return null;
   }
 
-  const body = await parseJson<ApiSuccess<AuthResult>>(res);
-  saveSession(body.data.user, body.data.tokens);
-  return body.data.tokens.accessToken;
+  const body = await parseJson<AuthResult>(res);
+  saveSession(body.user, body.tokens);
+  return body.tokens.accessToken;
 }
 
 async function request<T>(path: string, init: RequestInit = {}, auth = true): Promise<T> {
@@ -107,7 +101,7 @@ export async function register(
   username: string,
   password: string,
 ): Promise<AuthResult> {
-  const body = await request<ApiSuccess<AuthResult>>(
+  const body = await request<AuthResult>(
     "/api/v1/auth/register",
     {
       method: "POST",
@@ -115,12 +109,12 @@ export async function register(
     },
     false,
   );
-  saveSession(body.data.user, body.data.tokens);
-  return body.data;
+  saveSession(body.user, body.tokens);
+  return body;
 }
 
 export async function login(email: string, password: string): Promise<AuthResult> {
-  const body = await request<ApiSuccess<AuthResult>>(
+  const body = await request<AuthResult>(
     "/api/v1/auth/login",
     {
       method: "POST",
@@ -128,8 +122,8 @@ export async function login(email: string, password: string): Promise<AuthResult
     },
     false,
   );
-  saveSession(body.data.user, body.data.tokens);
-  return body.data;
+  saveSession(body.user, body.tokens);
+  return body;
 }
 
 export async function logout(): Promise<void> {
@@ -145,28 +139,28 @@ export async function logout(): Promise<void> {
 }
 
 export async function getMe(): Promise<SafeUser> {
-  const body = await request<ApiSuccess<{ user: SafeUser }>>("/api/v1/auth/me");
-  return body.data.user;
+  const body = await request<{ user: SafeUser }>("/api/v1/auth/me");
+  return body.user;
 }
 
 export type BoardSnapshot = WhiteBoardSnapshot & { lastSeq: number };
 
 export async function createBoard(title?: string): Promise<BoardSnapshot> {
-  const body = await request<ApiSuccess<BoardSnapshot>>("/api/v1/boards", {
+  const body = await request<BoardSnapshot>("/api/v1/boards", {
     method: "POST",
     body: JSON.stringify({ title }),
   });
-  return body.data;
+  return body;
 }
 
 export async function getBoard(id: string): Promise<BoardSnapshot> {
-  const body = await request<ApiSuccess<BoardSnapshot>>(`/api/v1/boards/${id}`);
-  return body.data;
+  const body = await request<BoardSnapshot>(`/api/v1/boards/${id}`);
+  return body;
 }
 
 export async function listBoards(): Promise<BoardListItem[]> {
-  const body = await request<ApiSuccess<BoardListItem[]>>("/api/v1/boards");
-  return body.data;
+  const body = await request<BoardListItem[]>("/api/v1/boards");
+  return body;
 }
 
 export async function deleteBoard(id: string): Promise<void> {

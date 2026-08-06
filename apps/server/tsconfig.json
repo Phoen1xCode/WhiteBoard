@@ -11,7 +11,8 @@
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@generated/*": ["./prisma/generated/*"]
     }
   },
   "include": ["src/**/*.ts", "generated/**/*.ts", "prisma.config.ts"]

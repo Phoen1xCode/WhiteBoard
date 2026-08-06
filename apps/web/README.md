@@ -28,10 +28,10 @@ VITE_API_BASE=http://localhost:4000
 VITE_WS_URL=http://localhost:4000
 ```
 
-| 变量 | 必填 | 说明 |
-| --- | --- | --- |
-| `VITE_API_BASE` | 否 | REST 基地址，默认 `http://localhost:4000` |
-| `VITE_WS_URL` | 否 | WebSocket 地址，默认 `http://localhost:4000` |
+| 变量            | 必填 | 说明                                         |
+| --------------- | ---- | -------------------------------------------- |
+| `VITE_API_BASE` | 否   | REST 基地址，默认 `http://localhost:4000`    |
+| `VITE_WS_URL`   | 否   | WebSocket 地址，默认 `http://localhost:4000` |
 
 修改后需重启 Vite。
 
@@ -68,11 +68,11 @@ pnpm preview
 
 ## 常用脚本
 
-| 脚本 | 作用 |
-| --- | --- |
-| `pnpm dev` | Vite 开发服务器 |
-| `pnpm build` | 类型检查 + 生产构建 |
-| `pnpm preview` | 预览构建产物 |
+| 脚本           | 作用                |
+| -------------- | ------------------- |
+| `pnpm dev`     | Vite 开发服务器     |
+| `pnpm build`   | 类型检查 + 生产构建 |
+| `pnpm preview` | 预览构建产物        |
 
 ## 目录要点
 
