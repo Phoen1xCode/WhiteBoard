@@ -1,4 +1,4 @@
-import { AppError } from "@/lib/app-error";
+import { ApiError } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 
 import { PermissionRole, type Board } from "../prisma/generated/client";
@@ -13,14 +13,14 @@ async function loadBoardAndRole(
 ): Promise<{ board: Board; role: PermissionRole }> {
   const board = await prisma.board.findUnique({ where: { id: boardId } });
   if (!board) {
-    throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
+    throw new ApiError(404, "BOARD_NOT_FOUND", "Board not found");
   }
 
   const permission = await prisma.permission.findUnique({
     where: { boardId_userId: { boardId, userId } },
   });
   if (!permission) {
-    throw new AppError(403, "FORBIDDEN", "No permission to access this board");
+    throw new ApiError(403, "FORBIDDEN", "No permission to access this board");
   }
 
   return { board, role: permission.role };
@@ -34,7 +34,7 @@ export async function requireView(boardId: string, userId: string): Promise<Boar
 export async function requireEdit(boardId: string, userId: string): Promise<Board> {
   const { board, role } = await loadBoardAndRole(boardId, userId);
   if (!isEditRole(role)) {
-    throw new AppError(403, "FORBIDDEN", "Editor permission is required");
+    throw new ApiError(403, "FORBIDDEN", "Editor permission is required");
   }
   return board;
 }
@@ -42,7 +42,7 @@ export async function requireEdit(boardId: string, userId: string): Promise<Boar
 export async function requireOwner(boardId: string, userId: string): Promise<Board> {
   const { board, role } = await loadBoardAndRole(boardId, userId);
   if (role !== PermissionRole.OWNER) {
-    throw new AppError(403, "FORBIDDEN", "Owner permission is required");
+    throw new ApiError(403, "FORBIDDEN", "Owner permission is required");
   }
   return board;
 }

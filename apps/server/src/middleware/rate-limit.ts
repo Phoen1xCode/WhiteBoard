@@ -1,6 +1,6 @@
-import type { Context, Middleware } from "koa";
+import type { Context, MiddlewareHandler } from "hono";
 
-import { failure } from "@/lib/response";
+import { fail } from "@/lib/api-envelope";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -13,14 +13,14 @@ export interface RateLimitOptions {
   keyPrefix: string;
   limit: number;
   windowMs: number;
-  keyGenerator: (ctx: Context) => string | Promise<string>;
+  keyGenerator: (c: Context) => string | Promise<string>;
 }
 
 /** In-process sliding window. Single-instance only. */
 const windows = new Map<string, number[]>();
 
-export function getClientIp(ctx: Context): string {
-  return ctx.ip || ctx.request.ip || "unknown";
+export function getClientIp(c: Context): string {
+  return c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
 
 export async function checkRateLimit(
@@ -53,23 +53,21 @@ export async function checkRateLimit(
   };
 }
 
-export function rateLimit(options: RateLimitOptions): Middleware {
-  return async (ctx, next) => {
-    const keyPart = await options.keyGenerator(ctx);
+export function rateLimit(options: RateLimitOptions): MiddlewareHandler {
+  return async (c, next) => {
+    const keyPart = await options.keyGenerator(c);
     const result = await checkRateLimit(
       `${options.keyPrefix}:${keyPart}`,
       options.limit,
       options.windowMs,
     );
 
-    ctx.set("X-RateLimit-Limit", String(result.limit));
-    ctx.set("X-RateLimit-Remaining", String(result.remaining));
+    c.header("X-RateLimit-Limit", String(result.limit));
+    c.header("X-RateLimit-Remaining", String(result.remaining));
 
     if (!result.allowed) {
-      ctx.status = 429;
-      ctx.set("Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
-      ctx.body = failure("RATE_LIMITED", "Too many requests");
-      return;
+      c.header("Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
+      return c.json(fail("RATE_LIMITED", "Too many requests"), 429);
     }
 
     await next();

@@ -4,7 +4,7 @@ import { whiteBoardOperationSchema } from "@whiteboard/shared/schemas";
 
 import { requireEdit, requireView } from "@/board-access";
 import { applyOperations, getElementId, parseSnapshotElements } from "@/board-state";
-import { AppError } from "@/lib/app-error";
+import { ApiError } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 
 import type { Operation, Prisma } from "../prisma/generated/client";
@@ -32,10 +32,10 @@ export interface CommittedOperation {
 function validateOperationPayload(payload: unknown, expectedBoardId?: string): WhiteBoardOperation {
   const result = whiteBoardOperationSchema.safeParse(payload);
   if (!result.success) {
-    throw new AppError(400, "INVALID_OPERATION", "Invalid operation payload");
+    throw new ApiError(400, "INVALID_OPERATION", "Invalid operation payload");
   }
   if (expectedBoardId && result.data.boardId !== expectedBoardId) {
-    throw new AppError(400, "INVALID_OPERATION", "Operation boardId mismatch");
+    throw new ApiError(400, "INVALID_OPERATION", "Operation boardId mismatch");
   }
   return result.data as WhiteBoardOperation;
 }
@@ -74,7 +74,7 @@ async function persistAtomic(
       `;
       const board = locked[0];
       if (!board) {
-        throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
+        throw new ApiError(404, "BOARD_NOT_FOUND", "Board not found");
       }
 
       if (input.clientOpId) {

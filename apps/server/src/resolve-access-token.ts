@@ -1,6 +1,6 @@
 import type { AuthenticatedUser, JwtTokenPayload } from "@/types/auth";
 
-import { AppError } from "@/lib/app-error";
+import { ApiError } from "@/lib/api-error";
 import { verifyAccessToken } from "@/lib/jwt";
 import { prisma } from "@/lib/prisma";
 
@@ -16,12 +16,12 @@ export async function resolveAccessToken(token: string): Promise<ResolvedAccess>
   try {
     payload = verifyAccessToken(token);
   } catch {
-    throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
+    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
   }
 
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user) {
-    throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
+    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
   }
 
   return {

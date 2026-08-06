@@ -1,6 +1,6 @@
-import type { Middleware } from "koa";
+import type { MiddlewareHandler } from "hono";
 
-import { AppError } from "@/lib/app-error";
+import { ApiError } from "@/lib/api-error";
 import { resolveAccessToken } from "@/resolve-access-token";
 
 function extractBearer(header: string | undefined): string | null {
@@ -9,15 +9,15 @@ function extractBearer(header: string | undefined): string | null {
   return token || null;
 }
 
-export const authMiddleware: Middleware = async (ctx, next) => {
-  const token = extractBearer(ctx.get("authorization"));
+export const authMiddleware: MiddlewareHandler = async (c, next) => {
+  const token = extractBearer(c.req.header("authorization"));
   if (!token) {
-    throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
+    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
   }
 
   const resolved = await resolveAccessToken(token);
-  ctx.state.accessToken = resolved.token;
-  ctx.state.jwtPayload = resolved.payload;
-  ctx.state.user = resolved.user;
+  c.set("accessToken", resolved.token);
+  c.set("jwtPayload", resolved.payload);
+  c.set("user", resolved.user);
   await next();
 };

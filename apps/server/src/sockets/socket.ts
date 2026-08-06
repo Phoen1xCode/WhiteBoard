@@ -28,7 +28,7 @@ import {
   replayOnBoard,
   userRoom,
 } from "@/collaboration";
-import { isAppError } from "@/lib/app-error";
+import { isApiError } from "@/lib/api-error";
 import { checkRateLimit } from "@/middleware/rate-limit";
 import { resolveAccessToken } from "@/resolve-access-token";
 
@@ -39,7 +39,7 @@ function errorAck(code: string, message: string, retryAfterMs?: number): AckResu
 }
 
 function mapError(error: unknown): AckResult<never> {
-  if (isAppError(error)) {
+  if (isApiError(error)) {
     return errorAck(error.code, error.message);
   }
   if (error instanceof ZodError) {

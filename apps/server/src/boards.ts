@@ -2,7 +2,7 @@ import type { WhiteBoardElement, WhiteBoardSnapshot } from "@whiteboard/shared/t
 
 import { requireEdit, requireOwner, requireView } from "@/board-access";
 import { parseSnapshotElements } from "@/board-state";
-import { AppError } from "@/lib/app-error";
+import { ApiError } from "@/lib/api-error";
 import { prisma } from "@/lib/prisma";
 
 import { PermissionRole, type Board } from "../prisma/generated/client";
@@ -53,7 +53,7 @@ async function readSnapshotWithSeq(boardId: string): Promise<BoardSnapshotWithSe
   });
 
   if (!result) {
-    throw new AppError(404, "BOARD_NOT_FOUND", "Board not found");
+    throw new ApiError(404, "BOARD_NOT_FOUND", "Board not found");
   }
   return result;
 }

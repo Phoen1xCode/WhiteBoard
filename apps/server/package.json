@@ -11,26 +11,20 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
-    "@koa/cors": "^5.0.0",
-    "@koa/router": "^15.7.0",
+    "@hono/node-server": "1.19.14",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@whiteboard/shared": "workspace:*",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
+    "hono": "^4.13.0",
     "jsonwebtoken": "^9.0.3",
-    "koa": "^3.2.1",
-    "koa-bodyparser": "^4.4.1",
     "pg": "^8.22.0",
     "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/koa": "^3.0.3",
-    "@types/koa-bodyparser": "^4.3.13",
-    "@types/koa__cors": "^5.0.1",
-    "@types/koa__router": "^12.0.5",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.20.0",
     "prisma": "^7.9.1",

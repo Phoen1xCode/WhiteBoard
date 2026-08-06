@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 
 import type { AuthResult, JwtTokenPayload, SafeUser } from "@/types/auth";
 
-import { AppError } from "@/lib/app-error";
+import { ApiError } from "@/lib/api-error";
 import { signTokenPair, verifyRefreshToken } from "@/lib/jwt";
 import { prisma } from "@/lib/prisma";
 
@@ -31,10 +31,10 @@ function toSafeUser(user: User): SafeUser {
 
 export async function register(input: RegisterInput): Promise<AuthResult> {
   if (await prisma.user.findUnique({ where: { email: input.email } })) {
-    throw new AppError(409, "EMAIL_ALREADY_EXISTS", "Email already exists");
+    throw new ApiError(409, "EMAIL_ALREADY_EXISTS", "Email already exists");
   }
   if (await prisma.user.findUnique({ where: { username: input.username } })) {
-    throw new AppError(409, "USERNAME_ALREADY_EXISTS", "Username already exists");
+    throw new ApiError(409, "USERNAME_ALREADY_EXISTS", "Username already exists");
   }
 
   const user = await prisma.user.create({
@@ -51,7 +51,7 @@ export async function register(input: RegisterInput): Promise<AuthResult> {
 export async function login(input: LoginInput): Promise<AuthResult> {
   const user = await prisma.user.findUnique({ where: { email: input.email } });
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
-    throw new AppError(401, "INVALID_CREDENTIALS", "Invalid email or password");
+    throw new ApiError(401, "INVALID_CREDENTIALS", "Invalid email or password");
   }
   return { user: toSafeUser(user), tokens: signTokenPair(user.id) };
 }
@@ -61,12 +61,12 @@ export async function refresh(refreshToken: string): Promise<AuthResult> {
   try {
     payload = verifyRefreshToken(refreshToken);
   } catch {
-    throw new AppError(401, "UNAUTHORIZED", "Invalid refresh token");
+    throw new ApiError(401, "UNAUTHORIZED", "Invalid refresh token");
   }
 
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user) {
-    throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
+    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
   }
 
   return { user: toSafeUser(user), tokens: signTokenPair(user.id) };
@@ -83,7 +83,7 @@ export async function logout(
 export async function getMe(userId: string): Promise<SafeUser> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
-    throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
+    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
   }
   return toSafeUser(user);
 }

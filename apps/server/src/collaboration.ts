@@ -9,7 +9,7 @@ import type { Server } from "socket.io";
 import type { AuthenticatedUser } from "@/types/auth";
 
 import { requireView } from "@/board-access";
-import { AppError } from "@/lib/app-error";
+import { ApiError } from "@/lib/api-error";
 import {
   commitOperation,
   getOperationsAfter,
@@ -118,7 +118,7 @@ export async function commitOnBoard(input: {
   clientOpId?: string | null;
 }): Promise<{ ack: OperationAckPayload; broadcast: CommittedOperationPayload | null }> {
   if (!isPresent(input.boardId, input.socketId)) {
-    throw new AppError(400, "NOT_JOINED", "Join the board before committing");
+    throw new ApiError(400, "NOT_JOINED", "Join the board before committing");
   }
 
   const committed = await commitOperation({

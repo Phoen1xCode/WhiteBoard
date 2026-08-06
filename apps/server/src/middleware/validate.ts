@@ -1,11 +1,7 @@
-import type { Middleware } from "koa";
+import type { MiddlewareHandler } from "hono";
 import type { z } from "zod";
 
-import { AppError } from "@/lib/app-error";
-
-type RequestWithBody = {
-  body?: unknown;
-};
+import { ApiError } from "@/lib/api-error";
 
 function formatValidationMessage(error: z.ZodError): string {
   return error.issues
@@ -13,16 +9,15 @@ function formatValidationMessage(error: z.ZodError): string {
     .join("; ");
 }
 
-export function validateBody<TBody>(schema: z.ZodType<TBody>): Middleware {
-  return async (ctx, next) => {
-    const request = ctx.request as typeof ctx.request & RequestWithBody;
-    const result = schema.safeParse(request.body);
+export function validateBody<TBody>(schema: z.ZodType<TBody>): MiddlewareHandler {
+  return async (c, next) => {
+    const result = schema.safeParse(await c.req.json().catch(() => undefined));
 
     if (!result.success) {
-      throw new AppError(400, "VALIDATION_ERROR", formatValidationMessage(result.error));
+      throw new ApiError(400, "VALIDATION_ERROR", formatValidationMessage(result.error));
     }
 
-    request.body = result.data;
+    c.set("body", result.data);
     await next();
   };
 }

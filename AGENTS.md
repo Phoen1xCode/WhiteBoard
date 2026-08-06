@@ -5,7 +5,7 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 ## Stack (current)
 
 - Runtime: Node.js + pnpm workspace. Do **not** reintroduce Bun runtime or Elysia.
-- HTTP: Koa. Realtime: Socket.IO.
+- HTTP: Hono (on `@hono/node-server`, `serve()` return value is the Node `http.Server` Socket.IO attaches to). Realtime: Socket.IO.
 - DB: PostgreSQL + Prisma 7 (`apps/server/prisma`). Client output: `apps/server/prisma/generated`.
 - Rate limit: in-process sliding window (`middleware/rate-limit.ts`). No Redis.
 - Shared contracts: `packages/shared` (`@whiteboard/shared`).
