@@ -1,5 +1,3 @@
-import type { Context } from "hono";
-
 import { Hono } from "hono";
 import { createBoardBodySchema, updateBoardTitleBodySchema } from "@whiteboard/shared/schemas";
 
@@ -16,19 +14,11 @@ const createBoardRateLimit = rateLimit({
   keyGenerator: (c) => c.get("user")?.id ?? getClientIp(c),
 });
 
-function userId(c: Context): string {
-  return c.get("user").id;
-}
-
-function body<T>(c: Context): T {
-  return c.get("body") as T;
-}
-
 export function createBoardsRouter(): Hono {
   const router = new Hono();
 
   router.get("/api/v1/boards", authMiddleware, async (c) => {
-    return c.json(ok(await boards.listBoards(userId(c))));
+    return c.json(ok(await boards.listBoards(c.get("user").id)));
   });
 
   router.post(
@@ -37,13 +27,13 @@ export function createBoardsRouter(): Hono {
     createBoardRateLimit,
     validateBody(createBoardBodySchema),
     async (c) => {
-      const { title } = body<{ title?: string }>(c);
-      return c.json(ok(await boards.createBoard(title ?? "Untitled Board", userId(c))), 201);
+      const { title } = c.req.valid("json");
+      return c.json(ok(await boards.createBoard(title ?? "Untitled Board", c.get("user").id)), 201);
     },
   );
 
   router.get("/api/v1/boards/:id", authMiddleware, async (c) => {
-    return c.json(ok(await boards.getBoard(c.req.param("id"), userId(c))));
+    return c.json(ok(await boards.getBoard(c.req.param("id"), c.get("user").id)));
   });
 
   router.patch(
@@ -51,13 +41,15 @@ export function createBoardsRouter(): Hono {
     authMiddleware,
     validateBody(updateBoardTitleBodySchema),
     async (c) => {
-      const { title } = body<{ title: string }>(c);
-      return c.json(ok(await boards.updateBoardTitle(c.req.param("id"), title, userId(c))));
+      const { title } = c.req.valid("json");
+      return c.json(
+        ok(await boards.updateBoardTitle(c.req.param("id"), title, c.get("user").id)),
+      );
     },
   );
 
   router.delete("/api/v1/boards/:id", authMiddleware, async (c) => {
-    await boards.deleteBoard(c.req.param("id"), userId(c));
+    await boards.deleteBoard(c.req.param("id"), c.get("user").id);
     return c.body(null, 204);
   });
 

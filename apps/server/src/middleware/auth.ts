@@ -1,22 +1,20 @@
-import type { MiddlewareHandler } from "hono";
+import { createMiddleware } from "hono/factory";
 
-import { ApiError } from "@/lib/api-error";
 import { resolveAccessToken } from "@/resolve-access-token";
 
-function extractBearer(header: string | undefined): string | null {
-  if (!header?.startsWith("Bearer ")) return null;
-  const token = header.slice("Bearer ".length).trim();
-  return token || null;
-}
+export const authMiddleware = createMiddleware(async (c, next) => {
+  const authHeader = c.req.header("authorization") ?? "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null;
 
-export const authMiddleware: MiddlewareHandler = async (c, next) => {
-  const token = extractBearer(c.req.header("authorization"));
   if (!token) {
-    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
+    return c.json(
+      { success: false, error: { code: "UNAUTHORIZED", message: "Unauthorized" } },
+      401,
+    );
   }
 
   const resolved = await resolveAccessToken(token);
   c.set("accessToken", resolved.token);
   c.set("user", resolved.user);
   await next();
-};
+});

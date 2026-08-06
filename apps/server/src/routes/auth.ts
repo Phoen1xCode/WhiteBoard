@@ -1,5 +1,3 @@
-import type { Context } from "hono";
-
 import { Hono } from "hono";
 import { loginBodySchema, refreshBodySchema, registerBodySchema } from "@whiteboard/shared/schemas";
 import { z } from "zod";
@@ -29,24 +27,20 @@ const loginRateLimit = rateLimit({
   keyGenerator: getClientIp,
 });
 
-function body<T>(c: Context): T {
-  return c.get("body") as T;
-}
-
 export function createAuthRouter(): Hono {
   const router = new Hono().basePath("/api/v1/auth");
 
   router.post("/register", registerRateLimit, validateBody(registerBodySchema), async (c) => {
-    const result = await auth.register(body(c));
+    const result = await auth.register(c.req.valid("json"));
     return c.json(ok(result), 201);
   });
 
   router.post("/login", loginRateLimit, validateBody(loginBodySchema), async (c) => {
-    return c.json(ok(await auth.login(body(c))));
+    return c.json(ok(await auth.login(c.req.valid("json"))));
   });
 
   router.post("/refresh", validateBody(refreshBodySchema), async (c) => {
-    const { refreshToken } = body<{ refreshToken: string }>(c);
+    const { refreshToken } = c.req.valid("json");
     return c.json(ok(await auth.refresh(refreshToken)));
   });
 

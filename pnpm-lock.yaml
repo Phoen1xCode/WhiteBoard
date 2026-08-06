@@ -27,6 +27,9 @@ importers:
       '@hono/node-server':
         specifier: 1.19.14
         version: 1.19.14(hono@4.13.0)
+      '@hono/zod-validator':
+        specifier: ^0.9.0
+        version: 0.9.0(hono@4.13.0)(zod@4.4.3)
       '@prisma/adapter-pg':
         specifier: ^7.9.1
         version: 7.9.1
@@ -579,6 +582,12 @@ packages:
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
+
+  '@hono/zod-validator@0.9.0':
+    resolution: {integrity: sha512-n0ZSXmCiHVIp4Y5wlOOyZCeTd/rsawA/qW1cipB8QOYKZ9N8Tk0nZUZCXho9cu374AN4JpDNKioNKBJ/W+LBug==}
+    peerDependencies:
+      hono: '>=4.11.2'
+      zod: ^3.25.0 || ^4.0.0
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -3805,6 +3814,11 @@ snapshots:
   '@hono/node-server@1.19.14(hono@4.13.0)':
     dependencies:
       hono: 4.13.0
+
+  '@hono/zod-validator@0.9.0(hono@4.13.0)(zod@4.4.3)':
+    dependencies:
+      hono: 4.13.0
+      zod: 4.4.3
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
