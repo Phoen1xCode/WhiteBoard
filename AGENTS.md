@@ -8,7 +8,7 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - HTTP: Hono (on `@hono/node-server`, `serve()` return value is the Node `http.Server` Socket.IO attaches to). Realtime: Socket.IO.
 - DB: PostgreSQL + Prisma 7 (`apps/server/prisma`). Client output: `apps/server/prisma/generated`.
 - Auth: Better Auth (`src/modules/auth/better-auth.ts` - Prisma adapter, bearer plugin, bcrypt password verify). One sliding session token serves as access+refresh token.
-- Rate limit: in-process sliding window (`shared/rate-limit.ts`). No Redis.
+- Rate limit: in-process sliding window (`src/shared/rate-limit.ts`). No Redis.
 - Shared contracts: `packages/shared` (`@whiteboard/shared`).
 
 Server layout (feature modules, factory DI, composition root in `index.ts`):

@@ -60,7 +60,7 @@ pnpm preview
 
 ## 本地联调顺序
 
-1. 按 `apps/server/README.md` 配好 Postgres / JWT，并 `pnpm prisma:migrate`
+1. 按 `apps/server/README.md` 配好 Postgres / 环境变量，并 `pnpm prisma:migrate`
 2. `pnpm dev:server`
 3. （可选）配置本包 `VITE_*`
 4. `pnpm dev:web`

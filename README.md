@@ -4,7 +4,7 @@
 
 ## 项目特点
 
-- 账号认证（JWT access/refresh）
+- 账号认证（Better Auth 滑动会话 token）
 - 白板权限：owner / editor / viewer
 - 多种绘图工具：自由线条、矩形、圆形、直线等
 - 实时协作：Socket.IO operation commit/ack/replay
@@ -25,11 +25,11 @@
 
 ### 后端
 
-- Node.js + Koa + @koa/router
+- Node.js + Hono（@hono/node-server）
 - Socket.IO
-- PostgreSQL + Prisma
+- PostgreSQL + Prisma 7
 - 进程内限流（单实例）
-- JWT（jsonwebtoken）
+- Better Auth（Prisma adapter + bearer）
 
 ### 工程/运维
 
@@ -41,7 +41,7 @@
 - [x] pnpm monorepo + shared 类型/schema
 - [x] 注册 / 登录 / 刷新 / 登出 / me
 - [x] 认证后的白板 CRUD + 权限
-- [x] OperationService（原子 seq、replayOps、fromSeq）
+- [x] operations service（原子 seq、幂等 clientOpId、fromSeq replay）
 - [x] Socket.IO：`board:join` / `operation:commit` / `operation:replay` / `cursor:update`
 - [x] 前端登录页、Bearer API、socket auth.token、断线 replay
 - [x] 基础绘图工具与 Konva UI
@@ -70,7 +70,7 @@ pnpm install
 
 ```bash
 cp apps/server/.env.example apps/server/.env
-# 编辑 DATABASE_URL / JWT_* 密钥
+# 编辑 DATABASE_URL / BETTER_AUTH_*
 ```
 
 关键变量：
@@ -78,8 +78,8 @@ cp apps/server/.env.example apps/server/.env
 ```bash
 DATABASE_URL=postgresql://whiteboard:whiteboardpassword@localhost:5432/whiteboard
 PORT=4000
-JWT_ACCESS_SECRET=replace-with-a-long-random-access-secret
-JWT_REFRESH_SECRET=replace-with-a-long-random-refresh-secret
+BETTER_AUTH_SECRET=replace-with-a-32-plus-char-random-secret
+BETTER_AUTH_URL=http://localhost:4000
 ```
 
 前端默认请求 `http://localhost:4000`（可用 `VITE_API_BASE` / `VITE_WS_URL` 覆盖）。
@@ -131,13 +131,14 @@ WhiteBoard/
 │   │
 │   └── server/                   # 后端应用
 │       ├── src/
-│       │   ├── auth.ts / boards.ts / operations.ts
-│       │   ├── board-access.ts / board-state.ts
-│       │   ├── resolve-access-token.ts / collaboration.ts
-│       │   ├── routes/           # HTTP adapters
-│       │   ├── sockets/          # Socket.IO adapter
-│       │   ├── middleware/       # auth / rate-limit 等
-│       │   └── lib/              # jwt / prisma
+│       │   ├── index.ts          # 组合根（依赖接线）
+│       │   ├── app.ts            # Hono 装配
+│       │   ├── config.ts         # zod 校验的环境变量
+│       │   ├── modules/
+│       │   │   ├── auth/         # better-auth / service / token / middleware / router
+│       │   │   ├── boards/       # boards+operations service / access / state / router
+│       │   │   └── realtime/     # presence / collaboration / socket
+│       │   └── shared/           # prisma 工厂 / ApiError / 限流 / http
 │       ├── prisma/
 │       │   ├── schema.prisma     # 数据库模型
 │       │   └── migrations/       # 数据库迁移文件
@@ -179,7 +180,7 @@ WhiteBoard 采用前后端分离的 Monorepo 架构，通过 pnpm workspace 统�
 │                      后端层 (Node.js)                       │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
 │  │  REST API    │  │  Socket.IO   │  │  业务逻辑    │       │
-│  │  (Koa)       │  │  服务器      │  │  (Service)   │       │
+│  │  (Hono)      │  │  服务器      │  │  (Service)   │       │
 │  └──────────────┘  └──────────────┘  └──────────────┘       │
 └─────────────────────────────────────────────────────────────┘
                             ↕ Prisma ORM
@@ -200,7 +201,7 @@ WhiteBoard 采用前后端分离的 Monorepo 架构，通过 pnpm workspace 统�
 ```
 客户端 A                    服务器                    客户端 B
    │                         │                         │
-   │  1. JWT + 快照/lastSeq  │                         │
+   │ 1. token + 快照/lastSeq │                         │
    │     (HTTP Bearer)       │                         │
    │ ◄─────────────────────  │                         │
    │                         │                         │
@@ -402,7 +403,7 @@ type ConnectionStatus = "connecting" | "connected" | "disconnected" | "reconnect
 
 **2. WebSocket 事件系统**
 
-基于 Socket.IO；握手通过 `auth.token`（JWT access）。房间名 `board:{boardId}`。
+基于 Socket.IO；握手通过 `auth.token`（会话 token）。房间名 `board:{boardId}`。
 
 **客户端 → 服务器：**
 
