@@ -38,3 +38,5 @@ apps/server/prisma/generated
 
 # Documentation
 # docs/  (track architecture/plan docs; keep local notes out via patterns if needed)
+# Agent skills
+skills-lock.json
