@@ -51,19 +51,17 @@ export function createAuthRouter(): Hono {
   });
 
   router.post("/logout", authMiddleware, validateBody(logoutBodySchema), async (c) => {
-    const payload = c.get("jwtPayload");
-    const { refreshToken } = body<{ refreshToken?: string }>(c);
+    const user = c.get("user");
     try {
-      await auth.logout(payload, refreshToken);
+      await auth.logout(c.get("accessToken"));
     } finally {
-      disconnectUserSockets(payload.sub);
+      disconnectUserSockets(user.id);
     }
     return c.json(ok({ loggedOut: true }));
   });
 
   router.get("/me", authMiddleware, async (c) => {
-    const payload = c.get("jwtPayload");
-    return c.json(ok({ user: await auth.getMe(payload.sub) }));
+    return c.json(ok({ user: await auth.getMe(c.get("user").id) }));
   });
 
   return router;

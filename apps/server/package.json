@@ -16,15 +16,14 @@
     "@prisma/client": "^7.9.1",
     "@whiteboard/shared": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "better-auth": "^1.6.26",
     "dotenv": "^17.4.2",
     "hono": "^4.13.0",
-    "jsonwebtoken": "^9.0.3",
     "pg": "^8.22.0",
     "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.20.0",
     "prisma": "^7.9.1",

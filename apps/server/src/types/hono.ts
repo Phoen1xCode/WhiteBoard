@@ -1,4 +1,4 @@
-import type { AuthenticatedUser, JwtTokenPayload } from "@/types/auth";
+import type { AuthenticatedUser } from "@/types/auth";
 
 import "hono";
 
@@ -6,7 +6,6 @@ import "hono";
 declare module "hono" {
   interface ContextVariableMap {
     user: AuthenticatedUser;
-    jwtPayload: JwtTokenPayload;
     accessToken: string;
     body: unknown;
   }

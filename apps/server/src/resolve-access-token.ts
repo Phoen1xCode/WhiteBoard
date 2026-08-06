@@ -1,36 +1,29 @@
-import type { AuthenticatedUser, JwtTokenPayload } from "@/types/auth";
+import type { AuthenticatedUser } from "@/types/auth";
 
 import { ApiError } from "@/lib/api-error";
-import { verifyAccessToken } from "@/lib/jwt";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 export interface ResolvedAccess {
   token: string;
-  payload: JwtTokenPayload;
   user: AuthenticatedUser;
 }
 
-/** Single path: access token → authenticated user (HTTP + Socket). */
+/** Single path: session token → authenticated user (HTTP + Socket). */
 export async function resolveAccessToken(token: string): Promise<ResolvedAccess> {
-  let payload: JwtTokenPayload;
-  try {
-    payload = verifyAccessToken(token);
-  } catch {
-    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
-  }
+  const result = await auth.api.getSession({
+    headers: new Headers({ authorization: `Bearer ${token}` }),
+  });
 
-  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-  if (!user) {
+  if (!result) {
     throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
   }
 
   return {
     token,
-    payload,
     user: {
-      id: user.id,
-      email: user.email,
-      username: user.username,
+      id: result.user.id,
+      email: result.user.email,
+      username: result.user.name,
     },
   };
 }

@@ -1,13 +1,3 @@
-export type TokenType = "access" | "refresh";
-
-export interface JwtTokenPayload {
-  sub: string;
-  jti: string;
-  type: TokenType;
-  exp?: number;
-  iat?: number;
-}
-
 export interface AuthenticatedUser {
   id: string;
   email: string;

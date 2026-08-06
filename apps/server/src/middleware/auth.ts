@@ -17,7 +17,6 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
 
   const resolved = await resolveAccessToken(token);
   c.set("accessToken", resolved.token);
-  c.set("jwtPayload", resolved.payload);
   c.set("user", resolved.user);
   await next();
 };

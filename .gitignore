@@ -23,8 +23,8 @@ dist-ssr
 
 # Environment variables
 .env
-.env.backup
-.env.*.backup
+.env.*
+!.env.example
 
 # Git worktrees
 .worktrees/
