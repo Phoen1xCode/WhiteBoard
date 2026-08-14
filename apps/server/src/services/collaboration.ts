@@ -4,9 +4,8 @@ import type {
   OperationReplayResultPayload,
 } from "@whiteboard/shared/types/socket";
 
-import type { OperationsService } from "@/modules/boards/operations.service";
-import type { CommittedOperation } from "@/modules/boards/operations.service";
-import type { Presence } from "@/modules/realtime/presence";
+import type { CommittedOperation, OperationsService } from "@/services/operations.service";
+import type { Presence } from "@/services/presence";
 
 import { ApiError } from "@/shared/api-error";
 

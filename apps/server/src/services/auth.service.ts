@@ -1,9 +1,9 @@
-import type { PrismaClient, User } from "@generated/client";
+import type { PrismaClient, User } from "@prisma/generated/client";
 
 import { APIError } from "better-auth/api";
 
-import type { AuthResult, SafeUser } from "@/modules/auth/auth.types";
-import type { BetterAuth } from "@/modules/auth/better-auth";
+import type { BetterAuth } from "@/lib/better-auth";
+import type { AuthResult, SafeUser } from "@/types/auth";
 
 import { ApiError } from "@/shared/api-error";
 

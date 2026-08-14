@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@generated/client";
+import type { PrismaClient } from "@prisma/generated/client";
 
 import bcrypt from "bcryptjs";
 import { betterAuth } from "better-auth";

@@ -1,10 +1,10 @@
 import type { WhiteBoardElement, WhiteBoardSnapshot } from "@whiteboard/shared/types";
 
-import { PermissionRole, type Board, type PrismaClient } from "@generated/client";
+import { PermissionRole, type Board, type PrismaClient } from "@prisma/generated/client";
 
-import type { BoardAccess } from "@/modules/boards/board-access";
+import type { BoardAccess } from "@/services/board-access";
 
-import { parseSnapshotElements } from "@/modules/boards/board-state";
+import { parseSnapshotElements } from "@/services/board-state";
 import { ApiError } from "@/shared/api-error";
 
 export interface BoardSnapshotWithSeq extends WhiteBoardSnapshot {

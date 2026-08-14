@@ -1,4 +1,4 @@
-import { PermissionRole, type Board, type PrismaClient } from "@generated/client";
+import { PermissionRole, type Board, type PrismaClient } from "@prisma/generated/client";
 
 import { ApiError } from "@/shared/api-error";
 

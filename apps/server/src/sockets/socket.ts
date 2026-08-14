@@ -15,11 +15,11 @@ import {
 } from "@whiteboard/shared/schemas";
 import { ZodError } from "zod";
 
-import type { AuthenticatedUser } from "@/modules/auth/auth.types";
-import type { ResolveAccessToken } from "@/modules/auth/token";
-import type { Collaboration } from "@/modules/realtime/collaboration";
+import type { ResolveAccessToken } from "@/lib/token";
+import type { Collaboration } from "@/services/collaboration";
+import type { AuthenticatedUser } from "@/types/auth";
 
-import { boardRoom, userRoom, type Presence } from "@/modules/realtime/presence";
+import { boardRoom, userRoom, type Presence } from "@/services/presence";
 import { isApiError } from "@/shared/api-error";
 import { checkRateLimit } from "@/shared/rate-limit";
 

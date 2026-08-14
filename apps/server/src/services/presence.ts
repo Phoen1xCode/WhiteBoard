@@ -1,7 +1,7 @@
 import type { SocketUser } from "@whiteboard/shared/types/socket";
 
-import type { AuthenticatedUser } from "@/modules/auth/auth.types";
-import type { BoardAccess } from "@/modules/boards/board-access";
+import type { BoardAccess } from "@/services/board-access";
+import type { AuthenticatedUser } from "@/types/auth";
 
 export function boardRoom(boardId: string): string {
   return `board:${boardId}`;

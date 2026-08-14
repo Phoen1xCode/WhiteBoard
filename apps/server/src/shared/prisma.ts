@@ -1,5 +1,5 @@
-import { PrismaClient } from "@generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/generated/client";
 
 import type { ServerConfig } from "@/config";
 

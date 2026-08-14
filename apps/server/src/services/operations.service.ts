@@ -1,11 +1,11 @@
-import type { Operation, Prisma, PrismaClient } from "@generated/client";
+import type { Operation, Prisma, PrismaClient } from "@prisma/generated/client";
 import type { WhiteBoardOperation } from "@whiteboard/shared/types";
 
 import { whiteBoardOperationSchema } from "@whiteboard/shared/schemas";
 
-import type { BoardAccess } from "@/modules/boards/board-access";
+import type { BoardAccess } from "@/services/board-access";
 
-import { applyOperations, getElementId, parseSnapshotElements } from "@/modules/boards/board-state";
+import { applyOperations, getElementId, parseSnapshotElements } from "@/services/board-state";
 import { ApiError } from "@/shared/api-error";
 
 export interface CommitOperationInput {

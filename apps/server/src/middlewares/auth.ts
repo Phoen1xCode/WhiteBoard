@@ -1,7 +1,7 @@
 import { createMiddleware } from "hono/factory";
 
-import type { AuthenticatedUser } from "@/modules/auth/auth.types";
-import type { ResolveAccessToken } from "@/modules/auth/token";
+import type { ResolveAccessToken } from "@/lib/token";
+import type { AuthenticatedUser } from "@/types/auth";
 
 import { errorBody } from "@/shared/http/error-handler";
 
