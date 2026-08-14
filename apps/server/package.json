@@ -20,7 +20,6 @@
     "@prisma/client": "^7.9.1",
     "@scalar/hono-api-reference": "^0.9.48",
     "@whiteboard/shared": "workspace:*",
-    "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.26",
     "dotenv": "^17.4.2",
     "hono": "^4.13.0",

@@ -1,47 +1,71 @@
-import bcrypt from "bcryptjs";
+import type { AuthenticatedUser } from "@whiteboard/shared/schemas";
+
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { bearer } from "better-auth/plugins";
+import { bearer, jwt, username } from "better-auth/plugins";
 
 import { config } from "@/config";
 import { db } from "@/db";
 import { HttpError } from "@/lib/errors";
 
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  username: string;
-}
-
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
   secret: config.betterAuthSecret,
-  baseURL: config.betterAuthUrl,
+  baseURL: config.betterAuthURL,
+  basePath: "/api/v1/auth",
   emailAndPassword: {
     enabled: true,
-    // Keep bcrypt so hashes backfilled into Account stay valid.
-    password: {
-      hash: (password) => bcrypt.hash(password, 12),
-      verify: ({ hash, password }) => bcrypt.compare(password, hash),
+  },
+  rateLimit: {
+    enabled: true,
+    customRules: {
+      "/login": { window: 60, max: 10 },
+      "/register": { window: 60, max: 5 },
     },
   },
-  user: {
-    modelName: "User",
-    fields: {
-      name: "username",
-    },
-  },
-  plugins: [bearer()],
+  plugins: [
+    bearer(),
+    username({
+      minUsernameLength: 4,
+      maxUsernameLength: 15,
+      // Match the existing public register contract (any 3–50 char handle).
+      usernameValidator: () => true,
+    }),
+    jwt(),
+  ],
 });
+
+export function isJWT(token: string): boolean {
+  const parts = token.split(".");
+  return parts.length === 3 && parts.every((part) => part.length > 0);
+}
+
+export function bearerHeaders(token: string): Headers {
+  return new Headers({ authorization: `Bearer ${token}` });
+}
+
+export async function issueAccessToken(sessionToken: string): Promise<string> {
+  const result = await auth.api.getToken({
+    headers: bearerHeaders(sessionToken),
+  });
+  if (!result?.token) {
+    throw new HttpError(500, "INTERNAL_SERVER_ERROR", "Failed to issue access token");
+  }
+  return result.token;
+}
 
 export async function resolveAccessToken(
   token: string,
 ): Promise<{ token: string; user: AuthenticatedUser }> {
+  if (isJWT(token)) {
+    return resolveJwtAccessToken(token);
+  }
+
   const result = await auth.api.getSession({
-    headers: new Headers({ authorization: `Bearer ${token}` }),
+    headers: bearerHeaders(token),
   });
 
-  if (!result) {
+  if (!result?.user.username) {
     throw new HttpError(401, "UNAUTHORIZED", "Unauthorized");
   }
 
@@ -50,7 +74,28 @@ export async function resolveAccessToken(
     user: {
       id: result.user.id,
       email: result.user.email,
-      username: result.user.name,
+      username: result.user.username,
     },
+  };
+}
+
+async function resolveJwtAccessToken(
+  token: string,
+): Promise<{ token: string; user: AuthenticatedUser }> {
+  const verified = await auth.api.verifyJWT({
+    body: { token },
+  });
+  const payload = verified?.payload;
+  const id = payload?.sub;
+  const email = typeof payload?.email === "string" ? payload.email : null;
+  const username = typeof payload?.username === "string" ? payload.username : null;
+
+  if (!id || !email || !username) {
+    throw new HttpError(401, "UNAUTHORIZED", "Unauthorized");
+  }
+
+  return {
+    token,
+    user: { id, email, username },
   };
 }

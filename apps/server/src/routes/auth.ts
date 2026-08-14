@@ -1,35 +1,23 @@
 import { createRoute } from "@hono/zod-openapi";
-import { loginBodySchema, refreshBodySchema, registerBodySchema } from "@whiteboard/shared/schemas";
+import {
+  authResultSchema,
+  loginBodySchema,
+  logoutBodySchema,
+  logoutResultSchema,
+  refreshBodySchema,
+  registerBodySchema,
+  userResponseSchema,
+} from "@whiteboard/shared/schemas";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { createRouter } from "@/lib/hono";
-import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { requireAuth } from "@/middleware/auth";
+import { betterAuthRateLimit } from "@/middleware/better-auth-rate-limit";
 import { bearerSecurity, errorSchema, jsonContent, jsonContentRequired } from "@/routes/openapi";
 import { authService } from "@/services/auth";
 
 const tags = ["Auth"];
-
-const safeUserSchema = z.object({
-  id: z.string(),
-  email: z.email(),
-  username: z.string(),
-  createdAt: z.iso.datetime(),
-  updatedAt: z.iso.datetime(),
-});
-
-const authResultSchema = z.object({
-  user: safeUserSchema,
-  tokens: z.object({
-    accessToken: z.string(),
-    refreshToken: z.string(),
-  }),
-});
-
-const logoutBodySchema = z.object({
-  refreshToken: z.string().min(1).optional(),
-});
 
 const registerRoute = createRoute({
   method: "post",
@@ -39,7 +27,7 @@ const registerRoute = createRoute({
     body: jsonContentRequired(registerBodySchema, "Registration credentials"),
   },
   responses: {
-    201: jsonContent(authResultSchema, "Registered user and session"),
+    201: jsonContent(authResultSchema, "Registered user, JWT, and session"),
     400: jsonContent(errorSchema, "Validation error"),
     409: jsonContent(errorSchema, "Email or username already exists"),
     429: jsonContent(errorSchema, "Rate limited"),
@@ -55,7 +43,7 @@ const loginRoute = createRoute({
     body: jsonContentRequired(loginBodySchema, "Login credentials"),
   },
   responses: {
-    200: jsonContent(authResultSchema, "Authenticated user and session"),
+    200: jsonContent(authResultSchema, "Authenticated user, JWT, and session"),
     400: jsonContent(errorSchema, "Validation error"),
     401: jsonContent(errorSchema, "Invalid credentials"),
     429: jsonContent(errorSchema, "Rate limited"),
@@ -67,10 +55,10 @@ const refreshRoute = createRoute({
   path: "/api/v1/auth/refresh",
   tags,
   request: {
-    body: jsonContentRequired(refreshBodySchema, "Current session token"),
+    body: jsonContentRequired(refreshBodySchema, "Session refresh token"),
   },
   responses: {
-    200: jsonContent(authResultSchema, "Current user and session"),
+    200: jsonContent(authResultSchema, "Current user, new JWT, and session"),
     400: jsonContent(errorSchema, "Validation error"),
     401: jsonContent(errorSchema, "Invalid session"),
   },
@@ -82,10 +70,10 @@ const logoutRoute = createRoute({
   tags,
   security: bearerSecurity,
   request: {
-    body: jsonContentRequired(logoutBodySchema, "Optional legacy refresh token"),
+    body: jsonContentRequired(logoutBodySchema, "Optional session refresh token"),
   },
   responses: {
-    200: jsonContent(z.object({ loggedOut: z.literal(true) }), "Session revoked"),
+    200: jsonContent(logoutResultSchema, "Session revoked"),
     400: jsonContent(errorSchema, "Validation error"),
     401: jsonContent(errorSchema, "Unauthorized"),
   },
@@ -97,31 +85,17 @@ const meRoute = createRoute({
   tags,
   security: bearerSecurity,
   responses: {
-    200: jsonContent(z.object({ user: safeUserSchema }), "Current user"),
+    200: jsonContent(z.object({ user: userResponseSchema }), "Current user"),
     401: jsonContent(errorSchema, "Unauthorized"),
   },
-});
-
-const registerRateLimit = rateLimit({
-  keyPrefix: "rate:ip:register",
-  limit: 5,
-  windowMs: 60_000,
-  keyGenerator: getClientIp,
-});
-
-const loginRateLimit = rateLimit({
-  keyPrefix: "rate:ip:login",
-  limit: 10,
-  windowMs: 60_000,
-  keyGenerator: getClientIp,
 });
 
 export function createAuthRoutes(onLogout: (userId: string) => void = () => {}) {
   const router = createRouter();
 
   router.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
-  router.use(registerRoute.getRoutingPath(), registerRateLimit);
-  router.use(loginRoute.getRoutingPath(), loginRateLimit);
+  router.use(registerRoute.getRoutingPath(), betterAuthRateLimit);
+  router.use(loginRoute.getRoutingPath(), betterAuthRateLimit);
   router.use(logoutRoute.getRoutingPath(), requireAuth);
   router.use(meRoute.getRoutingPath(), requireAuth);
 
@@ -138,7 +112,7 @@ export function createAuthRoutes(onLogout: (userId: string) => void = () => {}) 
     .openapi(logoutRoute, async (c) => {
       const user = c.get("user");
       try {
-        await authService.logout(c.get("accessToken"));
+        await authService.logout(c.get("accessToken"), c.req.valid("json").refreshToken);
       } finally {
         onLogout(user.id);
       }

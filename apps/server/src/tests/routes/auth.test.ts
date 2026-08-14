@@ -31,7 +31,7 @@ const user = {
 
 const authResult = {
   user,
-  tokens: { accessToken: "session-token", refreshToken: "session-token" },
+  tokens: { accessToken: "jwt-access-token", refreshToken: "session-token" },
 };
 
 function setup() {
@@ -78,6 +78,30 @@ describe("auth routes", () => {
     });
   });
 
+  it("maps Better Auth rate limiting onto login and register", async () => {
+    mocks.authHandler.mockResolvedValue(
+      new Response(JSON.stringify({ message: "Too many requests. Please try again later." }), {
+        status: 429,
+        headers: { "X-Retry-After": "12" },
+      }),
+    );
+    const { app } = setup();
+
+    const response = await app.request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: user.email, password: "password123" }),
+    });
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("12");
+    expect(response.headers.get("X-Retry-After")).toBe("12");
+    expect(await response.json()).toEqual({
+      error: { code: "RATE_LIMITED", message: "Too many requests" },
+    });
+    expect(mocks.service.login).not.toHaveBeenCalled();
+  });
+
   it("registers and logs out through the auth service", async () => {
     const { app, onLogout } = setup();
     const registered = await app.request("/api/v1/auth/register", {
@@ -101,7 +125,7 @@ describe("auth routes", () => {
     expect(registered.status).toBe(201);
     expect(await registered.json()).toEqual(authResult);
     expect(loggedOut.status).toBe(200);
-    expect(mocks.service.logout).toHaveBeenCalledWith("session-token");
+    expect(mocks.service.logout).toHaveBeenCalledWith("session-token", undefined);
     expect(onLogout).toHaveBeenCalledWith(user.id);
   });
 });

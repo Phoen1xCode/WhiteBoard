@@ -1,95 +1,92 @@
-import type { User } from "@generated/client";
+import type {
+  AuthResult,
+  LoginInput,
+  RegisterInput,
+  UserResponse,
+} from "@whiteboard/shared/schemas";
 
 import { APIError } from "better-auth/api";
 
 import { db } from "@/db";
-import { auth } from "@/lib/auth";
+import { auth, bearerHeaders, isJWT, issueAccessToken } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
 
-interface RegisterInput {
-  email: string;
-  username: string;
-  password: string;
-}
+type BetterAuthUser = typeof auth.$Infer.Session.user;
 
-interface LoginInput {
-  email: string;
-  password: string;
-}
-
-interface BetterAuthUser {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface SafeUser {
-  id: string;
-  email: string;
-  username: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface AuthResult {
-  user: SafeUser;
-  tokens: {
-    accessToken: string;
-    refreshToken: string;
-  };
-}
-
-function toSafeUser(user: User | BetterAuthUser): SafeUser {
+function toUserResponse(user: BetterAuthUser): UserResponse {
   return {
     id: user.id,
     email: user.email,
-    username: "username" in user ? user.username : user.name,
+    username: user.username ?? user.name,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
 }
 
-/** Session token serves as both access and refresh token (sliding session). */
-function toAuthResult(user: User | BetterAuthUser, token: string): AuthResult {
-  return { user: toSafeUser(user), tokens: { accessToken: token, refreshToken: token } };
-}
-
-function bearerHeaders(token: string): Headers {
-  return new Headers({ authorization: `Bearer ${token}` });
+/** JWT access token + Better Auth session token as refresh. */
+async function createAuthResult(user: BetterAuthUser, sessionToken: string): Promise<AuthResult> {
+  return {
+    user: toUserResponse(user),
+    tokens: {
+      accessToken: await issueAccessToken(sessionToken),
+      refreshToken: sessionToken,
+    },
+  };
 }
 
 async function register(input: RegisterInput): Promise<AuthResult> {
   if (await db.user.findUnique({ where: { email: input.email } })) {
     throw new HttpError(409, "EMAIL_ALREADY_EXISTS", "Email already exists");
   }
-  if (await db.user.findUnique({ where: { username: input.username } })) {
+  if (await db.user.findUnique({ where: { username: input.username.toLowerCase() } })) {
     throw new HttpError(409, "USERNAME_ALREADY_EXISTS", "Username already exists");
   }
 
-  const { token, user } = await auth.api.signUpEmail({
-    body: { email: input.email, password: input.password, name: input.username },
-  });
-  if (!token) {
-    throw new HttpError(500, "INTERNAL_SERVER_ERROR", "Failed to create session");
+  let result;
+  try {
+    result = await auth.api.signUpEmail({
+      body: {
+        email: input.email,
+        password: input.password,
+        name: input.username,
+        username: input.username,
+      },
+    });
+  } catch (error) {
+    if (error instanceof APIError) {
+      if (error.body?.code === "USERNAME_IS_ALREADY_TAKEN") {
+        throw new HttpError(409, "USERNAME_ALREADY_EXISTS", "Username already exists");
+      }
+      if (error.body?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+        throw new HttpError(409, "EMAIL_ALREADY_EXISTS", "Email already exists");
+      }
+    }
+    throw error;
   }
 
-  return toAuthResult(user, token);
+  if (!result.token) {
+    throw new HttpError(500, "INTERNAL_SERVER_ERROR", "Failed to create session");
+  }
+  return await createAuthResult(result.user, result.token);
 }
 
 async function login(input: LoginInput): Promise<AuthResult> {
+  let result;
   try {
-    const { token, user } = await auth.api.signInEmail({
+    result = await auth.api.signInEmail({
       body: { email: input.email, password: input.password },
     });
-    return toAuthResult(user, token);
   } catch (error) {
-    if (error instanceof APIError) {
+    if (error instanceof APIError && error.body?.code === "INVALID_EMAIL_OR_PASSWORD") {
       throw new HttpError(401, "INVALID_CREDENTIALS", "Invalid email or password");
     }
     throw error;
   }
+
+  if (!result.token) {
+    throw new HttpError(500, "INTERNAL_SERVER_ERROR", "Failed to create session");
+  }
+  return await createAuthResult(result.user, result.token);
 }
 
 async function refresh(refreshToken: string): Promise<AuthResult> {
@@ -97,19 +94,29 @@ async function refresh(refreshToken: string): Promise<AuthResult> {
   if (!result) {
     throw new HttpError(401, "UNAUTHORIZED", "Invalid refresh token");
   }
-  return toAuthResult(result.user, result.session.token);
+  return await createAuthResult(result.user, result.session.token);
 }
 
-async function logout(accessToken: string): Promise<void> {
-  await auth.api.signOut({ headers: bearerHeaders(accessToken) });
+async function logout(accessToken: string, refreshToken?: string): Promise<void> {
+  const sessionToken = [refreshToken, accessToken].find((token) => token && !isJWT(token));
+  if (sessionToken) {
+    await auth.api.signOut({ headers: bearerHeaders(sessionToken) });
+    return;
+  }
+
+  const verified = await auth.api.verifyJWT({ body: { token: accessToken } });
+  const userId = verified?.payload?.sub;
+  if (userId) {
+    await db.session.deleteMany({ where: { userId } });
+  }
 }
 
-async function getMe(userId: string): Promise<SafeUser> {
+async function getMe(userId: string): Promise<UserResponse> {
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new HttpError(401, "UNAUTHORIZED", "Unauthorized");
   }
-  return toSafeUser(user);
+  return toUserResponse(user);
 }
 
 export const authService = { register, login, refresh, logout, getMe };

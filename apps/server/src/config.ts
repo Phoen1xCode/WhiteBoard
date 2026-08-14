@@ -16,7 +16,7 @@ export function loadConfig() {
   return {
     databaseUrl: env.DATABASE_URL,
     betterAuthSecret: env.BETTER_AUTH_SECRET,
-    betterAuthUrl: env.BETTER_AUTH_URL,
+    betterAuthURL: env.BETTER_AUTH_URL,
     logLevel: env.LOG_LEVEL,
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
