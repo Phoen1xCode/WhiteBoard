@@ -8,11 +8,17 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(root, "src"),
-      "@prisma": path.resolve(root, "prisma"),
+      "@generated": path.resolve(root, "prisma/generated"),
     },
   },
   test: {
     environment: "node",
+    env: {
+      NODE_ENV: "test",
+      DATABASE_URL: "postgresql://whiteboard:whiteboard@localhost:5432/whiteboard_test",
+      BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret",
+      BETTER_AUTH_URL: "http://localhost:4000",
+    },
     include: ["src/tests/**/*.test.ts"],
   },
 });

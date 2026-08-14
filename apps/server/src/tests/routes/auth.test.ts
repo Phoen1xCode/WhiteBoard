@@ -1,13 +1,25 @@
-import { createMiddleware } from "hono/factory";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BetterAuth } from "@/lib/better-auth";
-import type { ResolveAccessToken } from "@/lib/token";
-import type { AuthService } from "@/services/auth.service";
+const mocks = vi.hoisted(() => ({
+  authHandler: vi.fn(),
+  resolveAccessToken: vi.fn(),
+  service: {
+    register: vi.fn(),
+    login: vi.fn(),
+    refresh: vi.fn(),
+    logout: vi.fn(),
+    getMe: vi.fn(),
+  },
+}));
 
-import { createTestApp } from "@/lib/create-app";
-import { createAuthMiddleware, type AuthMiddleware } from "@/middlewares/auth";
-import { createAuthRouter } from "@/routes/auth/auth.index";
+vi.mock("@/lib/auth", () => ({
+  auth: { handler: mocks.authHandler },
+  resolveAccessToken: mocks.resolveAccessToken,
+}));
+
+vi.mock("@/services/auth", () => ({ authService: mocks.service }));
+
+import { createApp } from "@/app";
 
 const user = {
   id: "user-1",
@@ -22,38 +34,28 @@ const authResult = {
   tokens: { accessToken: "session-token", refreshToken: "session-token" },
 };
 
-function setup(authMiddlewareOverride?: AuthMiddleware) {
-  const authService = {
-    register: vi.fn().mockResolvedValue(authResult),
-    login: vi.fn().mockResolvedValue(authResult),
-    refresh: vi.fn().mockResolvedValue(authResult),
-    logout: vi.fn().mockResolvedValue(undefined),
-    getMe: vi.fn().mockResolvedValue(user),
-  } as unknown as AuthService;
-  const auth = {
-    handler: vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
-  } as unknown as BetterAuth;
-  const authMiddleware =
-    authMiddlewareOverride ??
-    (createMiddleware(async (c, next) => {
-      c.set("accessToken", "session-token");
-      c.set("user", { id: user.id, email: user.email, username: user.username });
-      await next();
-    }) as AuthMiddleware);
+function setup() {
   const onLogout = vi.fn();
-
-  return {
-    app: createTestApp(createAuthRouter({ auth, authService, authMiddleware, onLogout })),
-    authService,
-    onLogout,
-  };
+  return { app: createApp({ onLogout }), onLogout };
 }
 
 describe("auth routes", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.authHandler.mockResolvedValue(new Response(null, { status: 204 }));
+    mocks.resolveAccessToken.mockResolvedValue({
+      token: "session-token",
+      user: { id: user.id, email: user.email, username: user.username },
+    });
+    mocks.service.register.mockResolvedValue(authResult);
+    mocks.service.login.mockResolvedValue(authResult);
+    mocks.service.refresh.mockResolvedValue(authResult);
+    mocks.service.logout.mockResolvedValue(undefined);
+    mocks.service.getMe.mockResolvedValue(user);
+  });
 
   it("rejects protected routes without a bearer token", async () => {
-    const { app } = setup(createAuthMiddleware(vi.fn() as ResolveAccessToken));
+    const { app } = setup();
     const response = await app.request("/api/v1/auth/me");
 
     expect(response.status).toBe(401);
@@ -76,8 +78,8 @@ describe("auth routes", () => {
     });
   });
 
-  it("registers and logs out through injected services", async () => {
-    const { app, authService, onLogout } = setup();
+  it("registers and logs out through the auth service", async () => {
+    const { app, onLogout } = setup();
     const registered = await app.request("/api/v1/auth/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -89,14 +91,17 @@ describe("auth routes", () => {
     });
     const loggedOut = await app.request("/api/v1/auth/logout", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        authorization: "Bearer session-token",
+        "content-type": "application/json",
+      },
       body: "{}",
     });
 
     expect(registered.status).toBe(201);
     expect(await registered.json()).toEqual(authResult);
     expect(loggedOut.status).toBe(200);
-    expect(authService.logout).toHaveBeenCalledWith("session-token");
+    expect(mocks.service.logout).toHaveBeenCalledWith("session-token");
     expect(onLogout).toHaveBeenCalledWith(user.id);
   });
 });

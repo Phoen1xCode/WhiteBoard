@@ -6,7 +6,11 @@ import {
 } from "@whiteboard/shared/schemas";
 import { z } from "zod";
 
-import { bearerSecurity, errorSchema, jsonContent, jsonContentRequired } from "@/lib/open-api";
+import { createRouter } from "@/lib/hono";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { requireAuth } from "@/middleware/auth";
+import { bearerSecurity, errorSchema, jsonContent, jsonContentRequired } from "@/routes/openapi";
+import { boardsService } from "@/services/boards";
 
 const tags = ["Boards"];
 
@@ -29,7 +33,7 @@ const boardSnapshotSchema = z.object({
   lastSeq: z.number().int().min(0),
 });
 
-export const list = createRoute({
+const listRoute = createRoute({
   method: "get",
   path: "/api/v1/boards",
   tags,
@@ -40,7 +44,7 @@ export const list = createRoute({
   },
 });
 
-export const create = createRoute({
+const createBoardRoute = createRoute({
   method: "post",
   path: "/api/v1/boards",
   tags,
@@ -56,7 +60,7 @@ export const create = createRoute({
   },
 });
 
-export const getOne = createRoute({
+const getBoardRoute = createRoute({
   method: "get",
   path: "/api/v1/boards/{id}",
   tags,
@@ -70,7 +74,7 @@ export const getOne = createRoute({
   },
 });
 
-export const update = createRoute({
+const updateBoardRoute = createRoute({
   method: "patch",
   path: "/api/v1/boards/{id}",
   tags,
@@ -88,7 +92,7 @@ export const update = createRoute({
   },
 });
 
-export const remove = createRoute({
+const deleteBoardRoute = createRoute({
   method: "delete",
   path: "/api/v1/boards/{id}",
   tags,
@@ -102,8 +106,44 @@ export const remove = createRoute({
   },
 });
 
-export type ListRoute = typeof list;
-export type CreateRoute = typeof create;
-export type GetOneRoute = typeof getOne;
-export type UpdateRoute = typeof update;
-export type RemoveRoute = typeof remove;
+const createBoardRateLimit = rateLimit({
+  keyPrefix: "rate:user:board:create",
+  limit: 20,
+  windowMs: 60_000,
+  keyGenerator: (c) => c.get("user")?.id ?? getClientIp(c),
+});
+
+const router = createRouter();
+
+router.use(listRoute.getRoutingPath(), requireAuth);
+router.use("/api/v1/boards/*", requireAuth);
+router.post(createBoardRoute.getRoutingPath(), createBoardRateLimit);
+
+export const boardsRoutes = router
+  .openapi(listRoute, async (c) => {
+    return c.json(await boardsService.listBoards(c.get("user").id), 200);
+  })
+  .openapi(createBoardRoute, async (c) => {
+    const { title } = c.req.valid("json");
+    return c.json(
+      await boardsService.createBoard(title ?? "Untitled Board", c.get("user").id),
+      201,
+    );
+  })
+  .openapi(getBoardRoute, async (c) => {
+    return c.json(await boardsService.getBoard(c.req.valid("param").id, c.get("user").id), 200);
+  })
+  .openapi(updateBoardRoute, async (c) => {
+    return c.json(
+      await boardsService.updateBoardTitle(
+        c.req.valid("param").id,
+        c.req.valid("json").title,
+        c.get("user").id,
+      ),
+      200,
+    );
+  })
+  .openapi(deleteBoardRoute, async (c) => {
+    await boardsService.deleteBoard(c.req.valid("param").id, c.get("user").id);
+    return c.body(null, 204);
+  });

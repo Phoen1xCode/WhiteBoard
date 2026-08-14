@@ -11,16 +11,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
 });
 
-export interface ServerConfig {
-  databaseUrl: string;
-  betterAuthSecret: string;
-  betterAuthUrl?: string;
-  logLevel: z.infer<typeof envSchema>["LOG_LEVEL"];
-  nodeEnv: z.infer<typeof envSchema>["NODE_ENV"];
-  port: number;
-}
-
-export function loadConfig(): ServerConfig {
+export function loadConfig() {
   const env = envSchema.parse(process.env);
   return {
     databaseUrl: env.DATABASE_URL,
@@ -31,3 +22,5 @@ export function loadConfig(): ServerConfig {
     port: env.PORT,
   };
 }
+
+export const config = loadConfig();

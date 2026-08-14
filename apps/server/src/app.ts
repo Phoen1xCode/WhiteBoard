@@ -1,41 +1,67 @@
 import type { MiddlewareHandler } from "hono";
 
-import type { BetterAuth } from "@/lib/better-auth";
-import type { AuthMiddleware } from "@/middlewares/auth";
-import type { AuthService } from "@/services/auth.service";
-import type { BoardsService } from "@/services/boards.service";
+import { Scalar } from "@scalar/hono-api-reference";
+import { cors } from "hono/cors";
+import { requestId } from "hono/request-id";
 
-import { configureOpenAPI } from "@/lib/configure-open-api";
-import { createBaseApp } from "@/lib/create-app";
-import { createAuthRouter } from "@/routes/auth/auth.index";
-import { createBoardsRouter } from "@/routes/boards/boards.index";
-import { createIndexRouter } from "@/routes/index.route";
+import type { AppOpenAPI } from "@/lib/hono";
 
-export interface AppDeps {
-  auth: BetterAuth;
-  authService: AuthService;
-  authMiddleware: AuthMiddleware;
-  boardsService: BoardsService;
+import { errorBody, errorHandler } from "@/lib/errors";
+import { createRouter } from "@/lib/hono";
+import { createAuthRoutes } from "@/routes/auth";
+import { boardsRoutes } from "@/routes/boards";
+import { indexRoutes } from "@/routes/index";
+
+import packageJson from "../package.json" with { type: "json" };
+
+interface AppOptions {
   logger?: MiddlewareHandler;
-  onLogout: (userId: string) => void;
+  onLogout?: (userId: string) => void;
 }
 
-export function createApp({
-  auth,
-  authService,
-  authMiddleware,
-  boardsService,
-  logger,
-  onLogout,
-}: AppDeps) {
-  const app = createBaseApp({ logger });
+function configureOpenAPI(app: AppOpenAPI): void {
+  app.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", {
+    type: "http",
+    scheme: "bearer",
+  });
 
+  app.doc("/doc", {
+    openapi: "3.0.0",
+    info: {
+      title: "WhiteBoard API",
+      version: packageJson.version,
+    },
+  });
+
+  app.get(
+    "/reference",
+    Scalar({
+      url: "/doc",
+      theme: "kepler",
+      layout: "classic",
+      defaultHttpClient: {
+        targetKey: "js",
+        clientKey: "fetch",
+      },
+    }),
+  );
+}
+
+export function createApp(options: AppOptions = {}) {
+  const app = createRouter();
+
+  app.use(requestId());
+  app.use(cors());
+  if (options.logger) app.use(options.logger);
+
+  app.onError(errorHandler);
+  app.notFound((c) => c.json(errorBody("NOT_FOUND", "Not Found"), 404));
   configureOpenAPI(app);
 
   return app
-    .route("/", createIndexRouter())
-    .route("/", createAuthRouter({ auth, authService, authMiddleware, onLogout }))
-    .route("/", createBoardsRouter({ boardsService, authMiddleware }));
+    .route("/", indexRoutes)
+    .route("/", createAuthRoutes(options.onLogout))
+    .route("/", boardsRoutes);
 }
 
 export type AppType = ReturnType<typeof createApp>;

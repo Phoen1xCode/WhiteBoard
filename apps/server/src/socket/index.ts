@@ -15,13 +15,13 @@ import {
 } from "@whiteboard/shared/schemas";
 import { ZodError } from "zod";
 
-import type { ResolveAccessToken } from "@/lib/token";
-import type { Collaboration } from "@/services/collaboration";
-import type { AuthenticatedUser } from "@/types/auth";
+import type { AuthenticatedUser } from "@/lib/auth";
 
-import { boardRoom, userRoom, type Presence } from "@/services/presence";
-import { isApiError } from "@/shared/api-error";
-import { checkRateLimit } from "@/shared/rate-limit";
+import { resolveAccessToken } from "@/lib/auth";
+import { HttpError } from "@/lib/errors";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { collaboration } from "@/socket/collaboration";
+import { boardRoom, presence, userRoom } from "@/socket/presence";
 
 type AuthedSocket = Socket & { data: { user: AuthenticatedUser } };
 
@@ -30,7 +30,7 @@ function errorAck(code: string, message: string, retryAfterMs?: number): AckResu
 }
 
 function mapError(error: unknown): AckResult<never> {
-  if (isApiError(error)) {
+  if (error instanceof HttpError) {
     return errorAck(error.code, error.message);
   }
   if (error instanceof ZodError) {
@@ -69,16 +69,7 @@ function extractToken(socket: Socket): string | null {
   return null;
 }
 
-export interface SocketServerDeps {
-  presence: Presence;
-  collaboration: Collaboration;
-  resolveAccessToken: ResolveAccessToken;
-}
-
-export function createSocketServer(
-  io: Server,
-  { presence, collaboration, resolveAccessToken }: SocketServerDeps,
-) {
+export function registerSocketServer(io: Server) {
   io.use(async (socket, next) => {
     try {
       const token = extractToken(socket);
@@ -220,7 +211,7 @@ export function createSocketServer(
           y: payload.y,
         });
       } catch {
-        // ignore malformed cursor updates
+        // Ignore malformed cursor updates.
       }
     });
 

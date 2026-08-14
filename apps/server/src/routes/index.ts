@@ -1,8 +1,8 @@
 import { createRoute } from "@hono/zod-openapi";
 import { z } from "zod";
 
-import { createRouter } from "@/lib/create-app";
-import { jsonContent } from "@/lib/open-api";
+import { createRouter } from "@/lib/hono";
+import { jsonContent } from "@/routes/openapi";
 
 const indexRoute = createRoute({
   method: "get",
@@ -13,8 +13,6 @@ const indexRoute = createRoute({
   },
 });
 
-export function createIndexRouter() {
-  return createRouter().openapi(indexRoute, (c) => {
-    return c.json({ message: "WhiteBoard API" }, 200);
-  });
-}
+export const indexRoutes = createRouter().openapi(indexRoute, (c) => {
+  return c.json({ message: "WhiteBoard API" }, 200);
+});

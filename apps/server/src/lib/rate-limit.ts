@@ -1,5 +1,9 @@
 import type { Context, MiddlewareHandler } from "hono";
 
+import type { AppBindings } from "@/lib/hono";
+
+import { errorBody } from "@/lib/errors";
+
 export interface RateLimitResult {
   allowed: boolean;
   limit: number;
@@ -7,17 +11,17 @@ export interface RateLimitResult {
   retryAfterMs: number;
 }
 
-export interface RateLimitOptions {
+interface RateLimitOptions {
   keyPrefix: string;
   limit: number;
   windowMs: number;
-  keyGenerator: (c: Context) => string | Promise<string>;
+  keyGenerator: (c: Context<AppBindings>) => string | Promise<string>;
 }
 
 /** In-process sliding window. Single-instance only. */
 const windows = new Map<string, number[]>();
 
-export function getClientIp(c: Context): string {
+export function getClientIp(c: Context<AppBindings>): string {
   return c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
 
@@ -28,7 +32,7 @@ export async function checkRateLimit(
 ): Promise<RateLimitResult> {
   const now = Date.now();
   const cutoff = now - windowMs;
-  const hits = (windows.get(key) ?? []).filter((t) => t > cutoff);
+  const hits = (windows.get(key) ?? []).filter((time) => time > cutoff);
 
   if (hits.length >= limit) {
     windows.set(key, hits);
@@ -51,7 +55,7 @@ export async function checkRateLimit(
   };
 }
 
-export function rateLimit(options: RateLimitOptions): MiddlewareHandler {
+export function rateLimit(options: RateLimitOptions): MiddlewareHandler<AppBindings> {
   return async (c, next) => {
     const keyPart = await options.keyGenerator(c);
     const result = await checkRateLimit(
@@ -65,7 +69,7 @@ export function rateLimit(options: RateLimitOptions): MiddlewareHandler {
 
     if (!result.allowed) {
       c.header("Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
-      return c.json({ error: { code: "RATE_LIMITED", message: "Too many requests" } }, 429);
+      return c.json(errorBody("RATE_LIMITED", "Too many requests"), 429);
     }
 
     await next();

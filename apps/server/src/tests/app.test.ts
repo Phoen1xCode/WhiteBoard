@@ -1,29 +1,13 @@
-import { createMiddleware } from "hono/factory";
 import { testClient } from "hono/testing";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import type { BetterAuth } from "@/lib/better-auth";
-import type { AuthMiddleware } from "@/middlewares/auth";
-import type { AuthService } from "@/services/auth.service";
-import type { BoardsService } from "@/services/boards.service";
-
 import { createApp } from "@/app";
-
-function createDocumentedApp() {
-  const authMiddleware = createMiddleware(async (c, next) => next()) as AuthMiddleware;
-
-  return createApp({
-    auth: { handler: async () => new Response() } as unknown as BetterAuth,
-    authService: {} as AuthService,
-    authMiddleware,
-    boardsService: {} as BoardsService,
-    onLogout: () => {},
-  });
-}
+import { errorHandler, HttpError } from "@/lib/errors";
+import { createRouter } from "@/lib/hono";
 
 describe("application", () => {
   it("serves all route groups in OpenAPI and keeps the stable 404 shape", async () => {
-    const app = createDocumentedApp();
+    const app = createApp();
     const client = testClient(app);
     expectTypeOf(client.api.v1.auth.register.$post).toBeFunction();
     expectTypeOf(client.api.v1.boards[":id"].$get).toBeFunction();
@@ -54,6 +38,27 @@ describe("application", () => {
     expect(missing.status).toBe(404);
     expect(await missing.json()).toEqual({
       error: { code: "NOT_FOUND", message: "Not Found" },
+    });
+  });
+
+  it("maps HttpError and hides internal messages", async () => {
+    const app = createRouter();
+    app.onError(errorHandler);
+    app.get("/missing", () => {
+      throw new HttpError(404, "BOARD_NOT_FOUND", "Board not found");
+    });
+    app.get("/internal", () => {
+      throw new HttpError(500, "INTERNAL_SERVER_ERROR", "database details");
+    });
+
+    const missing = await app.request("/missing");
+    const internal = await app.request("/internal");
+
+    expect(await missing.json()).toEqual({
+      error: { code: "BOARD_NOT_FOUND", message: "Board not found" },
+    });
+    expect(await internal.json()).toEqual({
+      error: { code: "INTERNAL_SERVER_ERROR", message: "Internal Server Error" },
     });
   });
 });

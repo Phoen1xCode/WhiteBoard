@@ -1,11 +1,25 @@
-import { createMiddleware } from "hono/factory";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AuthMiddleware } from "@/middlewares/auth";
-import type { BoardsService } from "@/services/boards.service";
+const mocks = vi.hoisted(() => ({
+  authHandler: vi.fn(),
+  resolveAccessToken: vi.fn(),
+  service: {
+    listBoards: vi.fn(),
+    createBoard: vi.fn(),
+    getBoard: vi.fn(),
+    updateBoardTitle: vi.fn(),
+    deleteBoard: vi.fn(),
+  },
+}));
 
-import { createTestApp } from "@/lib/create-app";
-import { createBoardsRouter } from "@/routes/boards/boards.index";
+vi.mock("@/lib/auth", () => ({
+  auth: { handler: mocks.authHandler },
+  resolveAccessToken: mocks.resolveAccessToken,
+}));
+
+vi.mock("@/services/boards", () => ({ boardsService: mocks.service }));
+
+import { createApp } from "@/app";
 
 const user = { id: "user-1", email: "alice@example.com", username: "alice" };
 const board = {
@@ -16,66 +30,68 @@ const board = {
   lastSeq: 0,
 };
 
-function setup() {
-  const boardsService = {
-    listBoards: vi.fn().mockResolvedValue([
+function authorizationHeaders(): HeadersInit {
+  return { authorization: "Bearer session-token" };
+}
+
+describe("board routes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.authHandler.mockResolvedValue(new Response(null, { status: 204 }));
+    mocks.resolveAccessToken.mockResolvedValue({ token: "session-token", user });
+    mocks.service.listBoards.mockResolvedValue([
       {
         id: board.id,
         title: board.title,
         createdAt: board.updatedAt,
         updatedAt: board.updatedAt,
       },
-    ]),
-    createBoard: vi.fn().mockResolvedValue(board),
-    getBoard: vi.fn().mockResolvedValue(board),
-    updateBoardTitle: vi.fn().mockResolvedValue(board),
-    deleteBoard: vi.fn().mockResolvedValue(board),
-  } as unknown as BoardsService;
-  const authMiddleware = createMiddleware(async (c, next) => {
-    c.set("accessToken", "session-token");
-    c.set("user", user);
-    await next();
-  }) as AuthMiddleware;
-
-  return {
-    app: createTestApp(createBoardsRouter({ boardsService, authMiddleware })),
-    boardsService,
-  };
-}
-
-describe("board routes", () => {
-  beforeEach(() => vi.clearAllMocks());
+    ]);
+    mocks.service.createBoard.mockResolvedValue(board);
+    mocks.service.getBoard.mockResolvedValue(board);
+    mocks.service.updateBoardTitle.mockResolvedValue(board);
+    mocks.service.deleteBoard.mockResolvedValue(undefined);
+  });
 
   it("lists boards and creates one with the default title", async () => {
-    const { app, boardsService } = setup();
-    const listed = await app.request("/api/v1/boards");
+    const app = createApp();
+    const listed = await app.request("/api/v1/boards", {
+      headers: authorizationHeaders(),
+    });
     const created = await app.request("/api/v1/boards", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        ...authorizationHeaders(),
+        "content-type": "application/json",
+      },
       body: "{}",
     });
 
     expect(listed.status).toBe(200);
     expect(await listed.json()).toHaveLength(1);
     expect(created.status).toBe(201);
-    expect(boardsService.createBoard).toHaveBeenCalledWith("Untitled Board", user.id);
+    expect(mocks.service.createBoard).toHaveBeenCalledWith("Untitled Board", user.id);
   });
 
   it("validates updates and deletes without a response body", async () => {
-    const { app, boardsService } = setup();
+    const app = createApp();
     const invalid = await app.request(`/api/v1/boards/${board.id}`, {
       method: "PATCH",
-      headers: { "content-type": "application/json" },
+      headers: {
+        ...authorizationHeaders(),
+        "content-type": "application/json",
+      },
       body: JSON.stringify({ title: "" }),
     });
     const removed = await app.request(`/api/v1/boards/${board.id}`, {
       method: "DELETE",
+      headers: authorizationHeaders(),
     });
 
     expect(invalid.status).toBe(400);
     expect(await invalid.json()).toMatchObject({ error: { code: "VALIDATION_ERROR" } });
     expect(removed.status).toBe(204);
     expect(await removed.text()).toBe("");
-    expect(boardsService.deleteBoard).toHaveBeenCalledWith(board.id, user.id);
+    expect(mocks.service.deleteBoard).toHaveBeenCalledWith(board.id, user.id);
   });
 });
