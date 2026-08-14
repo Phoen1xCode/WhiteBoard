@@ -20,12 +20,14 @@ pnpm install
 cp .env.example .env
 ```
 
-| 变量                 | 必填 | 说明                     |
-| -------------------- | ---- | ------------------------ |
-| `DATABASE_URL`       | 是   | PostgreSQL 连接串        |
-| `BETTER_AUTH_SECRET` | 是   | Better Auth 会话签名密钥 |
-| `BETTER_AUTH_URL`    | 否   | Better Auth base URL     |
-| `PORT`               | 否   | HTTP 端口，默认 `4000`   |
+| 变量                 | 必填 | 说明                       |
+| -------------------- | ---- | -------------------------- |
+| `DATABASE_URL`       | 是   | PostgreSQL 连接串          |
+| `BETTER_AUTH_SECRET` | 是   | Better Auth 会话签名密钥   |
+| `BETTER_AUTH_URL`    | 否   | Better Auth base URL       |
+| `NODE_ENV`           | 否   | 默认 `development`         |
+| `PORT`               | 否   | HTTP 端口，默认 `4000`     |
+| `LOG_LEVEL`          | 否   | Pino 日志级别，默认 `info` |
 
 ## 初始化数据库
 
@@ -40,20 +42,32 @@ pnpm prisma:migrate
 pnpm dev:server   # 仓库根目录
 pnpm dev          # 本包
 pnpm start        # 无 watch
+pnpm test
 pnpm typecheck
 ```
 
+## HTTP 文档
+
+- OpenAPI JSON：`GET /doc`
+- Scalar UI：`GET /reference`
+
 ## 目录
 
-按领域概念划分模块，工厂函数注入依赖，`src/index.ts` 为组合根：
+HTTP 层按路由组组织，领域服务继续使用工厂注入：
 
-- `src/config.ts` - zod 校验的环境变量
-- `src/shared/` - prisma 工厂、`ApiError`、限流（进程内）、HTTP 错误处理与校验
-- `src/modules/auth/` - Better Auth 配置、auth service、token 解析、中间件、路由（`/api/auth/*` 与 `/api/v1/auth/*` 两处挂载都在此）
-- `src/modules/boards/` - boards / operations service、权限检查、board-state 纯函数、路由
-- `src/modules/realtime/` - presence、collaboration（commit/replay 编排）、Socket.IO adapter
+- `src/index.ts` - Node HTTP 与 Socket.IO 启动入口
+- `src/bootstrap.ts` - 组合根，创建并连接数据库、认证、领域服务与实时服务
+- `src/app.ts` - 挂载 HTTP 路由组与 OpenAPI
+- `src/lib/` - Hono/OpenAPI 工厂、Better Auth、token 解析和公共类型
+- `src/middlewares/` - HTTP 中间件
+- `src/routes/<group>/` - `*.routes.ts` 契约、`*.handlers.ts` 处理器、`*.index.ts` 路由组装
+- `src/tests/` - 所有测试与 Vitest 配置
+- `src/services/` - 认证、白板、操作、在线状态与协作服务
+- `src/sockets/` - Socket.IO adapter
+- `src/types/` - 服务端领域类型
+- `src/shared/` - Prisma、`ApiError`、进程内限流和 HTTP 错误工具
 
-依赖方向：router/socket adapter → service → shared，domain 模块不 import hono/socket.io。
+依赖方向：route/socket adapter → service → shared，服务不 import Hono/Socket.IO。
 
 事件名：`board:join` / `board:leave` / `cursor:update` / `operation:commit` / `operation:replay`。
 
