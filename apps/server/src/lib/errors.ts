@@ -1,5 +1,5 @@
 import type { ApiErrorCode } from "@whiteboard/shared/schemas";
-import type { ErrorHandler } from "hono";
+import type { Context, Env, ErrorHandler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
 
@@ -23,6 +23,13 @@ export function formatValidationMessage(error: z.core.$ZodError): string {
   return error.issues
     .map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`)
     .join("; ");
+}
+
+export function validationError<E extends Env, P extends string>(
+  c: Context<E, P>,
+  error: z.core.$ZodError,
+) {
+  return c.json(errorBody("VALIDATION_ERROR", formatValidationMessage(error)), 400);
 }
 
 export const errorHandler: ErrorHandler = (error, c) => {

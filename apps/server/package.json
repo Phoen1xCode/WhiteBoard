@@ -14,11 +14,9 @@
   },
   "dependencies": {
     "@hono/node-server": "1.19.14",
-    "@hono/zod-openapi": "^1.5.2",
     "@hono/zod-validator": "^0.9.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
-    "@scalar/hono-api-reference": "^0.9.48",
     "@whiteboard/shared": "workspace:*",
     "better-auth": "^1.6.26",
     "dotenv": "^17.4.2",
