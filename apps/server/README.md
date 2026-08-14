@@ -53,21 +53,19 @@ pnpm typecheck
 
 ## 目录
 
-HTTP 层按路由组组织，领域服务继续使用工厂注入：
+后端按运行入口、HTTP、业务和实时协作四个边界组织：
 
-- `src/index.ts` - Node HTTP 与 Socket.IO 启动入口
-- `src/bootstrap.ts` - 组合根，创建并连接数据库、认证、领域服务与实时服务
-- `src/app.ts` - 挂载 HTTP 路由组与 OpenAPI
-- `src/lib/` - Hono/OpenAPI 工厂、Better Auth、token 解析和公共类型
-- `src/middlewares/` - HTTP 中间件
-- `src/routes/<group>/` - `*.routes.ts` 契约、`*.handlers.ts` 处理器、`*.index.ts` 路由组装
-- `src/tests/` - 所有测试与 Vitest 配置
-- `src/services/` - 认证、白板、操作、在线状态与协作服务
-- `src/sockets/` - Socket.IO adapter
-- `src/types/` - 服务端领域类型
-- `src/shared/` - Prisma、`ApiError`、进程内限流和 HTTP 错误工具
+- `src/index.ts` - 启动 Node HTTP，挂载 Socket.IO
+- `src/app.ts` - 注册 Hono 全局中间件、OpenAPI 和功能路由
+- `src/config.ts` / `src/db.ts` - 环境配置与 Prisma 单例
+- `src/lib/` - Better Auth、HTTP 错误、Hono 基础类型和进程内限流
+- `src/middleware/` - 认证与日志中间件
+- `src/routes/` - 每个功能一个文件，OpenAPI 契约和 handler 放在一起
+- `src/services/` - 与 Hono、Socket.IO 无关的认证、白板和操作业务
+- `src/socket/` - Socket.IO 事件、在线状态与协作编排
+- `src/tests/` - Vitest 配置和 HTTP 路由测试
 
-依赖方向：route/socket adapter → service → shared，服务不 import Hono/Socket.IO。
+依赖方向：`route/socket -> service -> db`。模块直接导入单例，不使用手写 IoC 容器。
 
 事件名：`board:join` / `board:leave` / `cursor:update` / `operation:commit` / `operation:replay`。
 

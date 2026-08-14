@@ -131,14 +131,16 @@ WhiteBoard/
 │   │
 │   └── server/                   # 后端应用
 │       ├── src/
-│       │   ├── index.ts          # 组合根（依赖接线）
-│       │   ├── app.ts            # Hono 装配
-│       │   ├── config.ts         # zod 校验的环境变量
-│       │   ├── modules/
-│       │   │   ├── auth/         # better-auth / service / token / middleware / router
-│       │   │   ├── boards/       # boards+operations service / access / state / router
-│       │   │   └── realtime/     # presence / collaboration / socket
-│       │   └── shared/           # prisma 工厂 / ApiError / 限流 / http
+│       │   ├── index.ts          # Node HTTP + Socket.IO 启动入口
+│       │   ├── app.ts            # Hono 中间件、OpenAPI 与路由装配
+│       │   ├── config.ts         # Zod 校验的环境变量
+│       │   ├── db.ts             # Prisma 单例
+│       │   ├── lib/              # auth / errors / Hono 基础设施 / 限流
+│       │   ├── middleware/       # HTTP 认证与日志
+│       │   ├── routes/           # OpenAPI 契约与内联 handler
+│       │   ├── services/         # auth / boards / operations 业务逻辑
+│       │   ├── socket/           # Socket.IO / presence / collaboration
+│       │   └── tests/            # 后端测试
 │       ├── prisma/
 │       │   ├── schema.prisma     # 数据库模型
 │       │   └── migrations/       # 数据库迁移文件
