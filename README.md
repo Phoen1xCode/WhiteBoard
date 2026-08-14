@@ -4,7 +4,7 @@
 
 ## 项目特点
 
-- 账号认证（Better Auth 滑动会话 token）
+- 账号认证（Better Auth session + JWT）
 - 白板权限：owner / editor / viewer
 - 多种绘图工具：自由线条、矩形、圆形、直线等
 - 实时协作：Socket.IO operation commit/ack/replay
@@ -132,12 +132,12 @@ WhiteBoard/
 │   └── server/                   # 后端应用
 │       ├── src/
 │       │   ├── index.ts          # Node HTTP + Socket.IO 启动入口
-│       │   ├── app.ts            # Hono 中间件、OpenAPI 与路由装配
+│       │   ├── app.ts            # Hono 中间件与路由装配
 │       │   ├── config.ts         # Zod 校验的环境变量
 │       │   ├── db.ts             # Prisma 单例
 │       │   ├── lib/              # auth / errors / Hono 基础设施 / 限流
 │       │   ├── middleware/       # HTTP 认证与日志
-│       │   ├── routes/           # OpenAPI 契约与内联 handler
+│       │   ├── routes/           # Hono 路由、Zod 校验与内联 handler
 │       │   ├── services/         # auth / boards / operations 业务逻辑
 │       │   ├── socket/           # Socket.IO / presence / collaboration
 │       │   └── tests/            # 后端测试
@@ -379,19 +379,23 @@ type ConnectionStatus = "connecting" | "connected" | "disconnected" | "reconnect
 
 #### 后端技术方案
 
+后端的运行方式、完整接口、Socket ack、限流和目录说明以 [`apps/server/README.md`](apps/server/README.md) 为准。
+
 **1. REST API 设计**
 
-除注册/登录/刷新外，HTTP API 需 `Authorization: Bearer <accessToken>`。
+除注册/登录/刷新外，HTTP API 需 `Authorization: Bearer <session-token>`。
 
 **认证：**
 
-| 方法 | 路径                    | 功能                     |
-| ---- | ----------------------- | ------------------------ |
-| POST | `/api/v1/auth/register` | 注册                     |
-| POST | `/api/v1/auth/login`    | 登录（access + refresh） |
-| POST | `/api/v1/auth/refresh`  | 刷新 access              |
-| POST | `/api/v1/auth/logout`   | 登出（踢掉 Socket）      |
-| GET  | `/api/v1/auth/me`       | 当前用户                 |
+| 方法 | 路径                    | 功能                  |
+| ---- | ----------------------- | --------------------- |
+| POST | `/api/v1/auth/register` | 注册并创建会话        |
+| POST | `/api/v1/auth/login`    | 登录并创建会话        |
+| POST | `/api/v1/auth/refresh`  | 校验当前滑动会话      |
+| POST | `/api/v1/auth/logout`   | 撤销会话并断开 Socket |
+| GET  | `/api/v1/auth/me`       | 当前用户              |
+
+`accessToken` 是短时 JWT，`refreshToken` 是 Better Auth session token。成功响应直接返回资源；错误统一为 `{ error: { code, message } }`。
 
 **白板（需登录；按 owner/editor/viewer 鉴权）：**
 
@@ -438,6 +442,14 @@ type ConnectionStatus = "connecting" | "connected" | "disconnected" | "reconnect
 - `Board.snapshot` 与 op log 在同一事务更新；`getBoard` 在行锁下原子读 snapshot + `lastSeq`
 - 客户端用 `lastSeq` 做 `operation:replay`，只补 `seq > lastSeq`
 
+**5. 后端模块边界**
+
+- `src/app.ts` 只装配 Hono 中间件和功能路由
+- `src/routes/` 将 Zod 请求校验与 handler 按功能放在同一个文件
+- `src/services/` 承载不依赖 Hono、Socket.IO 的业务逻辑
+- `src/socket/` 负责事件 adapter、presence 和协作编排
+- 依赖方向为 `route/socket -> service -> db`，运行时单例由 TypeScript 模块直接复用
+
 #### 数据库设计（核心）
 
 ```prisma
@@ -474,6 +486,10 @@ pnpm dev:web
 
 # 后端开发
 pnpm dev:server
+
+# 后端检查
+pnpm --filter @whiteboard/server test
+pnpm --filter @whiteboard/server typecheck
 
 # Prisma 相关
 pnpm prisma:generate   # 生成 Prisma Client
