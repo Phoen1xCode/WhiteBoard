@@ -1,4 +1,8 @@
-import type { WhiteBoardOperation } from "@whiteboard/shared/types";
+import type {
+  ApiErrorCode,
+  AuthenticatedUser,
+  WhiteBoardOperation,
+} from "@whiteboard/shared/schemas";
 import type {
   AckResult,
   BoardJoinedPayload,
@@ -15,8 +19,6 @@ import {
 } from "@whiteboard/shared/schemas";
 import { ZodError } from "zod";
 
-import type { AuthenticatedUser } from "@/lib/auth";
-
 import { resolveAccessToken } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -25,7 +27,7 @@ import { boardRoom, presence, userRoom } from "@/socket/presence";
 
 type AuthedSocket = Socket & { data: { user: AuthenticatedUser } };
 
-function errorAck(code: string, message: string, retryAfterMs?: number): AckResult<never> {
+function errorAck(code: ApiErrorCode, message: string, retryAfterMs?: number): AckResult<never> {
   return { ok: false, error: { code, message, retryAfterMs } };
 }
 

@@ -18,7 +18,7 @@ export function parseSnapshotElements(snapshot: unknown): WhiteBoardElement[] {
 
   return elements.flatMap((element) => {
     const result = whiteBoardElementSchema.safeParse(element);
-    return result.success ? [result.data as WhiteBoardElement] : [];
+    return result.success ? [result.data] : [];
   });
 }
 

@@ -1,22 +1,22 @@
+import type { ApiErrorCode } from "@whiteboard/shared/schemas";
 import type { ErrorHandler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
 
+import { errorBody } from "@whiteboard/shared/schemas";
 import { HTTPException } from "hono/http-exception";
+
+export { errorBody };
 
 export class HttpError extends Error {
   public constructor(
     public readonly status: ContentfulStatusCode,
-    public readonly code: string,
+    public readonly code: ApiErrorCode,
     message: string,
   ) {
     super(message);
     this.name = "HttpError";
   }
-}
-
-export function errorBody(code: string, message: string) {
-  return { error: { code, message } };
 }
 
 export function formatValidationMessage(error: z.core.$ZodError): string {

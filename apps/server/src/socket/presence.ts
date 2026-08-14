@@ -1,6 +1,5 @@
+import type { AuthenticatedUser } from "@whiteboard/shared/schemas";
 import type { SocketUser } from "@whiteboard/shared/types/socket";
-
-import type { AuthenticatedUser } from "@/lib/auth";
 
 import { requireBoardView } from "@/services/boards";
 
@@ -10,10 +9,6 @@ export function boardRoom(boardId: string): string {
 
 export function userRoom(userId: string): string {
   return `user:${userId}`;
-}
-
-function toSocketUser(user: AuthenticatedUser): SocketUser {
-  return { id: user.id, email: user.email, username: user.username };
 }
 
 /** In-process presence (single instance). */
@@ -34,7 +29,7 @@ async function joinBoard(input: {
   socketId: string;
 }): Promise<{ boardId: string; user: SocketUser; members: SocketUser[] }> {
   await requireBoardView(input.boardId, input.user.id);
-  const user = toSocketUser(input.user);
+  const user: SocketUser = input.user;
   const members = memberMap(input.boardId);
   members.set(input.socketId, user);
   return {

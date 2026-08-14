@@ -11,17 +11,8 @@ import { operationsService } from "@/services/operations";
 import { presence } from "@/socket/presence";
 
 function toCommittedPayload(operation: CommittedOperation): CommittedOperationPayload {
-  return {
-    id: operation.id,
-    boardId: operation.boardId,
-    userId: operation.userId,
-    seq: operation.seq,
-    opType: operation.opType,
-    elementId: operation.elementId,
-    clientOpId: operation.clientOpId,
-    payload: operation.payload,
-    createdAt: operation.createdAt,
-  };
+  const { created: _created, ...payload } = operation;
+  return payload;
 }
 
 async function commitOnBoard(input: {

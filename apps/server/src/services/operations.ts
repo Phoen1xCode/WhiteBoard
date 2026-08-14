@@ -1,5 +1,5 @@
 import type { Operation, Prisma } from "@generated/client";
-import type { WhiteBoardOperation } from "@whiteboard/shared/types";
+import type { CommittedOperationPayload, WhiteBoardOperation } from "@whiteboard/shared/schemas";
 
 import { whiteBoardOperationSchema } from "@whiteboard/shared/schemas";
 
@@ -15,18 +15,7 @@ export interface CommitOperationInput {
   clientOpId?: string | null;
 }
 
-export interface CommittedOperation {
-  id: string;
-  boardId: string;
-  userId: string | null;
-  seq: number;
-  opType: string;
-  elementId: string | null;
-  clientOpId: string | null;
-  payload: WhiteBoardOperation;
-  createdAt: string;
-  created: boolean;
-}
+export type CommittedOperation = CommittedOperationPayload & { created: boolean };
 
 function validateOperationPayload(payload: unknown, expectedBoardId?: string): WhiteBoardOperation {
   const result = whiteBoardOperationSchema.safeParse(payload);

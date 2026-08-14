@@ -7,6 +7,7 @@ import type {
   OperationReplayResultPayload,
 } from "@whiteboard/shared/types/socket";
 
+import { DEFINITIVE_API_ERROR_CODES } from "@whiteboard/shared/schemas";
 import { io, type Socket } from "socket.io-client";
 
 import { refreshAccessToken } from "@/lib/api";
@@ -44,13 +45,7 @@ export class SocketCommitError extends Error {
 }
 
 const JOIN_TIMEOUT_MS = 15_000;
-const DEFINITIVE_ERROR_CODES = new Set([
-  "FORBIDDEN",
-  "VALIDATION_ERROR",
-  "INVALID_OPERATION",
-  "UNAUTHORIZED",
-  "BOARD_NOT_FOUND",
-]);
+const DEFINITIVE_ERROR_CODES = new Set<string>(DEFINITIVE_API_ERROR_CODES);
 
 let socket: Socket | null = null;
 let currentBoardId: string | null = null;

@@ -1,21 +1,10 @@
-import type { WhiteBoardElement, WhiteBoardSnapshot } from "@whiteboard/shared/types";
+import type { BoardListItem, BoardSnapshot } from "@whiteboard/shared/schemas";
 
 import { PermissionRole } from "@generated/client";
 
 import { db } from "@/db";
 import { HttpError } from "@/lib/errors";
 import { parseSnapshotElements } from "@/services/board-state";
-
-interface BoardSnapshotWithSeq extends WhiteBoardSnapshot {
-  lastSeq: number;
-}
-
-interface BoardListItem {
-  id: string;
-  title: string;
-  updatedAt: string;
-  createdAt: string;
-}
 
 function isEditRole(role: PermissionRole): boolean {
   return role === PermissionRole.OWNER || role === PermissionRole.EDITOR;
@@ -57,7 +46,7 @@ export async function requireBoardOwner(boardId: string, userId: string) {
   return board;
 }
 
-async function readSnapshotWithSeq(boardId: string): Promise<BoardSnapshotWithSeq> {
+async function readSnapshotWithSeq(boardId: string): Promise<BoardSnapshot> {
   const result = await db.$transaction(async (tx) => {
     const locked = await tx.$queryRaw<
       Array<{
@@ -85,7 +74,7 @@ async function readSnapshotWithSeq(boardId: string): Promise<BoardSnapshotWithSe
     return {
       id: row.id,
       title: row.title,
-      elements: parseSnapshotElements(row.snapshot) as WhiteBoardElement[],
+      elements: parseSnapshotElements(row.snapshot),
       updatedAt: row.updatedAt.toISOString(),
       lastSeq: latest?.seq ?? 0,
     };
@@ -97,7 +86,7 @@ async function readSnapshotWithSeq(boardId: string): Promise<BoardSnapshotWithSe
   return result;
 }
 
-async function createBoard(title: string, userId: string): Promise<BoardSnapshotWithSeq> {
+async function createBoard(title: string, userId: string): Promise<BoardSnapshot> {
   const board = await db.$transaction(async (tx) => {
     const created = await tx.board.create({
       data: {
@@ -119,16 +108,12 @@ async function createBoard(title: string, userId: string): Promise<BoardSnapshot
   return readSnapshotWithSeq(board.id);
 }
 
-async function getBoard(id: string, userId: string): Promise<BoardSnapshotWithSeq> {
+async function getBoard(id: string, userId: string): Promise<BoardSnapshot> {
   await requireBoardView(id, userId);
   return readSnapshotWithSeq(id);
 }
 
-async function updateBoardTitle(
-  id: string,
-  title: string,
-  userId: string,
-): Promise<BoardSnapshotWithSeq> {
+async function updateBoardTitle(id: string, title: string, userId: string): Promise<BoardSnapshot> {
   await requireBoardEdit(id, userId);
   await db.board.update({ where: { id }, data: { title } });
   return readSnapshotWithSeq(id);

@@ -1,37 +1,18 @@
-import type { WhiteBoardSnapshot } from "@whiteboard/shared/types";
+import type {
+  ApiErrorBody,
+  AuthResult,
+  BoardListItem,
+  BoardSnapshot,
+  MeResponse,
+  TokenPair,
+  UserResponse,
+} from "@whiteboard/shared/schemas";
 
 import { clearSession, getAccessToken, getRefreshToken, saveSession } from "@/lib/auth";
 
+export type { AuthResult, BoardListItem, BoardSnapshot, TokenPair, UserResponse };
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
-
-export interface BoardListItem {
-  id: string;
-  title: string;
-  updatedAt: string;
-  createdAt: string;
-}
-
-export interface SafeUser {
-  id: string;
-  email: string;
-  username: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface AuthResult {
-  user: SafeUser;
-  tokens: TokenPair;
-}
-
-interface ApiFailure {
-  error: { code: string; message: string };
-}
 
 async function parseJson<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
@@ -81,7 +62,7 @@ async function request<T>(path: string, init: RequestInit = {}, auth = true): Pr
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {
-      const body = await parseJson<ApiFailure>(res);
+      const body = await parseJson<ApiErrorBody>(res);
       if (body?.error?.message) message = body.error.message;
     } catch {
       // ignore
@@ -138,12 +119,10 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function getMe(): Promise<SafeUser> {
-  const body = await request<{ user: SafeUser }>("/api/v1/auth/me");
+export async function getMe(): Promise<UserResponse> {
+  const body = await request<MeResponse>("/api/v1/auth/me");
   return body.user;
 }
-
-export type BoardSnapshot = WhiteBoardSnapshot & { lastSeq: number };
 
 export async function createBoard(title?: string): Promise<BoardSnapshot> {
   const body = await request<BoardSnapshot>("/api/v1/boards", {
