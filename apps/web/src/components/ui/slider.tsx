@@ -1,135 +1,52 @@
+import * as SliderPrimitive from "@radix-ui/react-slider";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-interface SliderProps {
-  className?: string;
-  value?: number[];
-  defaultValue?: number[];
-  min?: number;
-  max?: number;
-  step?: number;
-  onValueChange?: (value: number[]) => void;
-  disabled?: boolean;
-}
+function Slider({
+  className,
+  defaultValue,
+  value,
+  min = 0,
+  max = 100,
+  ...props
+}: React.ComponentProps<typeof SliderPrimitive.Root>) {
+  const _values = React.useMemo(
+    () => (Array.isArray(value) ? value : Array.isArray(defaultValue) ? defaultValue : [min, max]),
+    [value, defaultValue, min, max],
+  );
 
-const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
-  (
-    {
-      className,
-      value,
-      defaultValue = [0],
-      min = 0,
-      max = 100,
-      step = 1,
-      onValueChange,
-      disabled = false,
-      ...props
-    },
-    ref,
-  ) => {
-    const [internalValue, setInternalValue] = React.useState(defaultValue);
-    const currentValue = value ?? internalValue;
-    const trackRef = React.useRef<HTMLDivElement>(null);
-
-    const percentage = ((currentValue[0] - min) / (max - min)) * 100;
-
-    const updateValue = (clientX: number) => {
-      if (disabled || !trackRef.current) return;
-
-      const rect = trackRef.current.getBoundingClientRect();
-      const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      const rawValue = min + percent * (max - min);
-      const steppedValue = Math.round(rawValue / step) * step;
-      const clampedValue = Math.max(min, Math.min(max, steppedValue));
-
-      const newValue = [clampedValue];
-      setInternalValue(newValue);
-      onValueChange?.(newValue);
-    };
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-      if (disabled) return;
-      e.preventDefault();
-      updateValue(e.clientX);
-
-      const handleMouseMove = (e: MouseEvent) => {
-        updateValue(e.clientX);
-      };
-
-      const handleMouseUp = () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (disabled) return;
-
-      let newValue = currentValue[0];
-      switch (e.key) {
-        case "ArrowRight":
-        case "ArrowUp":
-          newValue = Math.min(max, currentValue[0] + step);
-          break;
-        case "ArrowLeft":
-        case "ArrowDown":
-          newValue = Math.max(min, currentValue[0] - step);
-          break;
-        case "Home":
-          newValue = min;
-          break;
-        case "End":
-          newValue = max;
-          break;
-        default:
-          return;
-      }
-
-      e.preventDefault();
-      const newValueArray = [newValue];
-      setInternalValue(newValueArray);
-      onValueChange?.(newValueArray);
-    };
-
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "relative flex w-full touch-none items-center select-none",
-          disabled && "cursor-not-allowed opacity-50",
-          className,
-        )}
-        {...props}
+  return (
+    <SliderPrimitive.Root
+      data-slot="slider"
+      defaultValue={defaultValue}
+      value={value}
+      min={min}
+      max={max}
+      className={cn(
+        "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
+        className,
+      )}
+      {...props}
+    >
+      <SliderPrimitive.Track
+        data-slot="slider-track"
+        className="relative w-full grow overflow-hidden rounded-base border-2 border-border bg-secondary-background data-[orientation=horizontal]:h-3 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-3"
       >
-        <div
-          ref={trackRef}
-          className="relative h-1.5 w-full grow cursor-pointer overflow-hidden rounded-full bg-primary/20"
-          onMouseDown={handleMouseDown}
-        >
-          <div className="absolute h-full bg-primary" style={{ width: `${percentage}%` }} />
-        </div>
-        <button
-          type="button"
-          role="slider"
-          aria-valuemin={min}
-          aria-valuemax={max}
-          aria-valuenow={currentValue[0]}
-          aria-disabled={disabled}
-          tabIndex={disabled ? -1 : 0}
-          className="absolute block h-4 w-4 cursor-grab rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:cursor-grabbing disabled:pointer-events-none disabled:opacity-50"
-          style={{ left: `calc(${percentage}% - 8px)` }}
-          onMouseDown={handleMouseDown}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
+        <SliderPrimitive.Range
+          data-slot="slider-range"
+          className="absolute bg-main data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
         />
-      </div>
-    );
-  },
-);
-Slider.displayName = "Slider";
+      </SliderPrimitive.Track>
+      {Array.from({ length: _values.length }, (_, index) => (
+        <SliderPrimitive.Thumb
+          data-slot="slider-thumb"
+          key={index}
+          className="block h-5 w-5 rounded-full border-2 border-border bg-white ring-offset-white transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+        />
+      ))}
+    </SliderPrimitive.Root>
+  );
+}
 
 export { Slider };

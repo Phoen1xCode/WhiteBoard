@@ -1,163 +1,47 @@
+"use client";
+
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-interface TooltipContextValue {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  triggerRef: React.RefObject<HTMLElement | null>;
-  delayDuration: number;
-}
-
-const TooltipContext = React.createContext<TooltipContextValue | null>(null);
-
-interface TooltipProviderProps {
-  children: React.ReactNode;
-  delayDuration?: number;
-}
-
-function TooltipProvider({ children, delayDuration = 400 }: TooltipProviderProps) {
+function TooltipProvider({
+  delayDuration = 0,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
   return (
-    <TooltipProviderContext.Provider value={{ delayDuration }}>
-      {children}
-    </TooltipProviderContext.Provider>
+    <TooltipPrimitive.Provider
+      data-slot="tooltip-provider"
+      delayDuration={delayDuration}
+      {...props}
+    />
   );
 }
 
-const TooltipProviderContext = React.createContext({ delayDuration: 400 });
-
-interface TooltipProps {
-  children: React.ReactNode;
-  open?: boolean;
-  defaultOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
+function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
 }
 
-function Tooltip({
-  children,
-  open: controlledOpen,
-  defaultOpen = false,
-  onOpenChange,
-}: TooltipProps) {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
-  const triggerRef = React.useRef<HTMLElement>(null);
-  const providerContext = React.useContext(TooltipProviderContext);
+function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+}
 
-  const open = controlledOpen ?? uncontrolledOpen;
-  const setOpen = (newOpen: boolean) => {
-    setUncontrolledOpen(newOpen);
-    onOpenChange?.(newOpen);
-  };
-
+function TooltipContent({
+  className,
+  sideOffset = 4,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
   return (
-    <TooltipContext.Provider
-      value={{ open, setOpen, triggerRef, delayDuration: providerContext.delayDuration }}
-    >
-      {children}
-    </TooltipContext.Provider>
+    <TooltipPrimitive.Content
+      data-slot="tooltip-content"
+      sideOffset={sideOffset}
+      className={cn(
+        "z-50 origin-(--radix-tooltip-content-transform-origin) animate-in overflow-hidden rounded-base border-2 border-border bg-main px-3 py-1.5 text-sm font-base text-main-foreground fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+        className,
+      )}
+      {...props}
+    />
   );
 }
-
-interface TooltipTriggerProps extends React.HTMLAttributes<HTMLElement> {
-  asChild?: boolean;
-}
-
-const TooltipTrigger = React.forwardRef<HTMLButtonElement, TooltipTriggerProps>(
-  ({ children, asChild, ...props }, ref) => {
-    const context = React.useContext(TooltipContext);
-    const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    if (!context) throw new Error("TooltipTrigger must be used within Tooltip");
-
-    const handleMouseEnter = () => {
-      timeoutRef.current = setTimeout(() => {
-        context.setOpen(true);
-      }, context.delayDuration);
-    };
-
-    const handleMouseLeave = () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      context.setOpen(false);
-    };
-
-    const handleFocus = () => {
-      context.setOpen(true);
-    };
-
-    const handleBlur = () => {
-      context.setOpen(false);
-    };
-
-    if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children as React.ReactElement<any>, {
-        ref,
-        onMouseEnter: handleMouseEnter,
-        onMouseLeave: handleMouseLeave,
-        onFocus: handleFocus,
-        onBlur: handleBlur,
-        ...props,
-      });
-    }
-
-    return (
-      <button
-        ref={ref}
-        type="button"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        {...props}
-      >
-        {children}
-      </button>
-    );
-  },
-);
-TooltipTrigger.displayName = "TooltipTrigger";
-
-interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement> {
-  side?: "top" | "right" | "bottom" | "left";
-  sideOffset?: number;
-}
-
-const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
-  ({ className, side = "top", sideOffset = 4, children, ...props }, ref) => {
-    const context = React.useContext(TooltipContext);
-
-    if (!context) throw new Error("TooltipContent must be used within Tooltip");
-
-    if (!context.open) return null;
-
-    const sideStyles: Record<string, string> = {
-      top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
-      bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
-      left: "right-full top-1/2 -translate-y-1/2 mr-2",
-      right: "left-full top-1/2 -translate-y-1/2 ml-2",
-    };
-
-    return (
-      <div
-        ref={ref}
-        role="tooltip"
-        className={cn(
-          "absolute z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground shadow-md animate-in fade-in-0 zoom-in-95",
-          sideStyles[side],
-          className,
-        )}
-        style={{
-          marginTop: side === "bottom" ? sideOffset : undefined,
-          marginBottom: side === "top" ? sideOffset : undefined,
-        }}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  },
-);
-TooltipContent.displayName = "TooltipContent";
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
