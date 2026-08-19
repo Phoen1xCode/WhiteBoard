@@ -1,6 +1,12 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["**/dist/**", "**/node_modules/**", "**/generated/**", "**/pnpm-lock.yaml"],
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/generated/**",
+    "**/routeTree.gen.ts",
+    "**/pnpm-lock.yaml"
+  ],
   "sortImports": {
     "internalPattern": ["@/", "~/", "#"],
     "newlinesBetween": true,

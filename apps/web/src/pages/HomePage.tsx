@@ -1,6 +1,6 @@
+import { useNavigate } from "@tanstack/react-router";
 import { Loader2, PenLine, Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import {
@@ -64,7 +64,7 @@ export function HomePage() {
     setIsCreating(true);
     try {
       const board = await createBoard("Untitled Board");
-      navigate(`/board/${board.id}`);
+      await navigate({ to: "/board/$boardId", params: { boardId: board.id } });
     } catch (error) {
       console.error("Failed to create board:", error);
       toast.error("Failed to create board. Please try again.");
@@ -103,7 +103,7 @@ export function HomePage() {
     } catch {
       // session cleared client-side anyway
     }
-    navigate("/login");
+    await navigate({ to: "/login", replace: true });
   }
 
   return (
@@ -144,7 +144,9 @@ export function HomePage() {
               title={board.title}
               meta={`更新于 ${formatDate(board.updatedAt)}`}
               previewClass={PREVIEW_COLORS[index % PREVIEW_COLORS.length]}
-              onClick={() => navigate(`/board/${board.id}`)}
+              onClick={() =>
+                void navigate({ to: "/board/$boardId", params: { boardId: board.id } })
+              }
               previewOverlay={
                 <button
                   type="button"

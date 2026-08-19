@@ -1,12 +1,13 @@
+import { Link, useRouter, useSearch } from "@tanstack/react-router";
 import { CircleAlert, Loader2, PenLine, Plus } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { login } from "@/lib/api";
 
 export function LoginPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { redirect } = useSearch({ from: "/login" });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function LoginPage() {
     setError(null);
     try {
       await login(email, password);
-      navigate("/");
+      router.history.replace(redirect ?? "/");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Auth failed";
       setError(message);
@@ -29,28 +30,28 @@ export function LoginPage() {
   }
 
   return (
-    <div className="bg-background flex min-h-screen w-full flex-col items-center justify-center gap-[28px] p-4">
+    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-[28px] bg-background p-4">
       <div className="flex items-center gap-[10px]">
-        <div className="bg-primary border-border flex h-[34px] w-[34px] items-center justify-center rounded-[6px] border-2">
-          <PenLine className="text-primary-foreground h-[18px] w-[18px]" />
+        <div className="flex h-[34px] w-[34px] items-center justify-center rounded-[6px] border-2 border-border bg-primary">
+          <PenLine className="h-[18px] w-[18px] text-primary-foreground" />
         </div>
-        <span className="text-foreground text-[20px] font-bold">Whiteboard</span>
+        <span className="text-[20px] font-bold text-foreground">Whiteboard</span>
       </div>
 
-      <div className="bg-card border-border flex w-full max-w-[400px] flex-col gap-[16px] rounded-lg border-2 p-[32px] shadow-[4px_4px_0px_0px_var(--border)]">
-        <h1 className="text-foreground text-[24px] font-bold">欢迎回来</h1>
-        <p className="text-muted-foreground text-[14px]">登录你的 Whiteboard 账户</p>
+      <div className="flex w-full max-w-[400px] flex-col gap-[16px] rounded-lg border-2 border-border bg-card p-[32px] shadow-[4px_4px_0px_0px_var(--border)]">
+        <h1 className="text-[24px] font-bold text-foreground">欢迎回来</h1>
+        <p className="text-[14px] text-muted-foreground">登录你的 Whiteboard 账户</p>
 
         {error && (
-          <div className="border-destructive flex items-center gap-[8px] rounded-[6px] border-2 bg-[#FDE7E7] px-[12px] py-[10px]">
-            <CircleAlert className="text-destructive h-[16px] w-[16px] shrink-0" />
-            <span className="text-destructive text-[13px] font-medium">{error}</span>
+          <div className="flex items-center gap-[8px] rounded-[6px] border-2 border-destructive bg-[#FDE7E7] px-[12px] py-[10px]">
+            <CircleAlert className="h-[16px] w-[16px] shrink-0 text-destructive" />
+            <span className="text-[13px] font-medium text-destructive">{error}</span>
           </div>
         )}
 
         <form className="flex flex-col gap-[16px]" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-[6px]">
-            <label htmlFor="email" className="text-foreground text-[14px] font-medium">
+            <label htmlFor="email" className="text-[14px] font-medium text-foreground">
               邮箱
             </label>
             <input
@@ -61,11 +62,11 @@ export function LoginPage() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-background border-input text-foreground placeholder:text-muted-foreground rounded-none border-2 px-[12px] py-[10px] text-[14px] outline-none"
+              className="rounded-none border-2 border-input bg-background px-[12px] py-[10px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
           <div className="flex flex-col gap-[6px]">
-            <label htmlFor="password" className="text-foreground text-[14px] font-medium">
+            <label htmlFor="password" className="text-[14px] font-medium text-foreground">
               密码
             </label>
             <input
@@ -76,18 +77,18 @@ export function LoginPage() {
               placeholder="请输入密码"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-background border-input text-foreground placeholder:text-muted-foreground rounded-none border-2 px-[12px] py-[10px] text-[14px] outline-none"
+              className="rounded-none border-2 border-input bg-background px-[12px] py-[10px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
           <div className="flex justify-end">
-            <Link to="/forgot-password" className="text-primary text-[13px] font-medium">
+            <Link to="/forgot-password" className="text-[13px] font-medium text-primary">
               忘记密码？
             </Link>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="bg-primary text-primary-foreground border-border flex w-full items-center justify-center gap-[6px] rounded-none border-2 px-[16px] py-[8px] text-[14px] font-medium shadow-[2px_2px_0px_0px_var(--border)] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-[6px] rounded-none border-2 border-border bg-primary px-[16px] py-[8px] text-[14px] font-medium text-primary-foreground shadow-[2px_2px_0px_0px_var(--border)] disabled:opacity-50"
           >
             {loading && <Loader2 className="h-[16px] w-[16px] animate-spin" />}
             登录
@@ -95,22 +96,22 @@ export function LoginPage() {
         </form>
 
         <div className="flex items-center gap-[12px] py-[4px]">
-          <div className="bg-border h-[2px] flex-1" />
-          <span className="text-muted-foreground text-[12px]">或</span>
-          <div className="bg-border h-[2px] flex-1" />
+          <div className="h-[2px] flex-1 bg-border" />
+          <span className="text-[12px] text-muted-foreground">或</span>
+          <div className="h-[2px] flex-1 bg-border" />
         </div>
 
         <button
           type="button"
-          className="bg-background text-foreground border-border flex w-full items-center justify-center gap-[6px] rounded-none border-2 px-[16px] py-[8px] text-[14px] font-medium shadow-[2px_2px_0px_0px_var(--border)]"
+          className="flex w-full items-center justify-center gap-[6px] rounded-none border-2 border-border bg-background px-[16px] py-[8px] text-[14px] font-medium text-foreground shadow-[2px_2px_0px_0px_var(--border)]"
         >
           <Plus className="h-[16px] w-[16px]" />
           使用 GitHub 登录
         </button>
 
         <div className="flex justify-center gap-[6px] pt-[4px]">
-          <span className="text-muted-foreground text-[13px]">还没有账户？</span>
-          <Link to="/signup" className="text-primary text-[13px] font-semibold">
+          <span className="text-[13px] text-muted-foreground">还没有账户？</span>
+          <Link to="/signup" className="text-[13px] font-semibold text-primary">
             立即注册
           </Link>
         </div>

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
   Circle,
   Cloud,
@@ -10,7 +11,6 @@ import {
   Type,
   Users,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const navLinks = ["功能", "模板", "价格", "关于"];
 
