@@ -6,6 +6,7 @@ import { bearer, jwt, username } from "better-auth/plugins";
 
 import { config } from "@/config";
 import { db } from "@/db";
+import { CLIENT_IP_HEADER } from "@/lib/client-ip";
 import { HttpError } from "@/lib/errors";
 
 export const auth = betterAuth({
@@ -21,6 +22,11 @@ export const auth = betterAuth({
     customRules: {
       "/login": { window: 60, max: 10 },
       "/register": { window: 60, max: 5 },
+    },
+  },
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: [CLIENT_IP_HEADER],
     },
   },
   plugins: [

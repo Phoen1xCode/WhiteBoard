@@ -63,8 +63,11 @@ COPY apps/server ./apps/server
 COPY apps/server/prisma ./prisma
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Generate Prisma client
-RUN pnpm --filter @whiteboard/server prisma:generate
+# Prisma validates the datasource URL while loading its config, but client
+# generation does not connect to the database. Keep real credentials out of
+# image layers by using a placeholder build-only URL.
+RUN DATABASE_URL=postgresql://prisma:prisma@localhost:5432/prisma \
+  pnpm --filter @whiteboard/server prisma:generate
 
 # ============================================
 # Stage 5: Production server image

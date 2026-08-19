@@ -59,7 +59,7 @@ curl http://localhost:4000/
 | `PORT`               | 否   | `4000`        | HTTP 和 Socket.IO 端口            |
 | `LOG_LEVEL`          | 否   | `info`        | Pino 日志级别                     |
 
-环境变量由 `src/config.ts` 在启动时通过 Zod 校验。缺少必填值时服务会立即退出。
+环境变量由 `src/config.ts` 在启动时通过 Zod 校验。缺少必填值时服务会立即退出。`BETTER_AUTH_SECRET` 至少需要 32 个字符，可用 `openssl rand -base64 32` 生成。
 
 ## 常用命令
 

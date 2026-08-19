@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build and test outputs
+dist
+**/dist
+build
+**/build
+coverage
+**/coverage
+
+# Generated local artifacts
+**/prisma/generated
+
+# Local environment files and secrets
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Repository and editor metadata
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*

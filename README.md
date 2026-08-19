@@ -82,6 +82,8 @@ BETTER_AUTH_SECRET=replace-with-a-32-plus-char-random-secret
 BETTER_AUTH_URL=http://localhost:4000
 ```
 
+请使用 `openssl rand -base64 32` 生成 `BETTER_AUTH_SECRET`，不要在生产环境使用示例占位值。
+
 前端默认请求 `http://localhost:4000`（可用 `VITE_API_BASE` / `VITE_WS_URL` 覆盖）。
 
 3. **数据库迁移**
@@ -506,19 +508,22 @@ pnpm prisma:migrate    # 运行数据库迁移
 ### 部署命令
 
 ```bash
-# 进入 docker 目录并启动所有服务
-cd docker && docker compose up -d --build
+# 先完成下方的环境变量配置，再启动所有服务
+cd docker && docker compose --env-file .env.docker up -d --build
 ```
 
 ### 详细部署步骤
 
-1. **配置环境变量（可选）**
+1. **配置环境变量（必需）**
 
 ```bash
 # 复制环境变量示例文件
 cp docker/.env.docker.example docker/.env.docker
 
-# 编辑配置（可选，默认配置可直接使用）
+# 生成密钥并将输出填入 BETTER_AUTH_SECRET
+openssl rand -base64 32
+
+# 编辑配置
 vim docker/.env.docker
 ```
 
@@ -531,33 +536,30 @@ cd docker
 # 构建并启动所有服务（使用自定义环境变量）
 docker compose --env-file .env.docker up -d --build
 
-# 或直接使用默认配置启动
-docker compose up -d --build
-
 # 查看服务状态
-docker compose ps
+docker compose --env-file .env.docker ps
 
 # 查看日志
-docker compose logs -f
+docker compose --env-file .env.docker logs -f
 
 # 查看特定服务日志
-docker compose logs -f server
+docker compose --env-file .env.docker logs -f server
 ```
 
 ### 常用 Docker 命令
 
 ```bash
 # 停止所有服务
-cd docker && docker-compose down
+cd docker && docker compose --env-file .env.docker down
 
 # 停止并删除数据卷
-cd docker && docker-compose down -v
+cd docker && docker compose --env-file .env.docker down -v
 
 # 重新构建并启动
-cd docker && docker-compose up -d --build
+cd docker && docker compose --env-file .env.docker up -d --build
 
 # 仅重启某个服务
-cd docker && docker-compose restart server
+cd docker && docker compose --env-file .env.docker restart server
 ```
 
 ### Docker 服务说明

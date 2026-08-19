@@ -29,7 +29,7 @@ export function createAuthRoutes(onLogout: (userId: string) => void = () => {}) 
         if (!result.success) return validationError(c, result.error);
       }),
       async (c) => {
-        return c.json(await authService.register(c.req.valid("json")), 201);
+        return c.json(await authService.register(c.req.valid("json"), c.req.raw.headers), 201);
       },
     )
     .post(
@@ -38,7 +38,7 @@ export function createAuthRoutes(onLogout: (userId: string) => void = () => {}) 
         if (!result.success) return validationError(c, result.error);
       }),
       async (c) => {
-        return c.json(await authService.login(c.req.valid("json")), 200);
+        return c.json(await authService.login(c.req.valid("json"), c.req.raw.headers), 200);
       },
     )
     .post(

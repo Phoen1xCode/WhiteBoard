@@ -34,7 +34,7 @@ async function createAuthResult(user: BetterAuthUser, sessionToken: string): Pro
   };
 }
 
-async function register(input: RegisterInput): Promise<AuthResult> {
+async function register(input: RegisterInput, headers: Headers): Promise<AuthResult> {
   if (await db.user.findUnique({ where: { email: input.email } })) {
     throw new HttpError(409, "EMAIL_ALREADY_EXISTS", "Email already exists");
   }
@@ -45,6 +45,7 @@ async function register(input: RegisterInput): Promise<AuthResult> {
   let result;
   try {
     result = await auth.api.signUpEmail({
+      headers,
       body: {
         email: input.email,
         password: input.password,
@@ -70,10 +71,11 @@ async function register(input: RegisterInput): Promise<AuthResult> {
   return await createAuthResult(result.user, result.token);
 }
 
-async function login(input: LoginInput): Promise<AuthResult> {
+async function login(input: LoginInput, headers: Headers): Promise<AuthResult> {
   let result;
   try {
     result = await auth.api.signInEmail({
+      headers,
       body: { email: input.email, password: input.password },
     });
   } catch (error) {
