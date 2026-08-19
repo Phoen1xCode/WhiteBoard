@@ -11,11 +11,20 @@ const buttonVariants = cva(
       variant: {
         default:
           "border-2 border-border bg-main text-main-foreground shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
+        destructive:
+          "border-2 border-border bg-destructive text-destructive-foreground shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
+        ghost:
+          "border-2 border-transparent bg-transparent text-foreground hover:border-border hover:bg-accent hover:text-accent-foreground",
+        link: "border-0 bg-transparent text-primary shadow-none underline-offset-4 hover:underline",
         noShadow: "border-2 border-border bg-main text-main-foreground",
         neutral:
           "border-2 border-border bg-secondary-background text-foreground shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
+        outline:
+          "border-2 border-border bg-background text-foreground shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
         reverse:
           "border-2 border-border bg-main text-main-foreground hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow",
+        secondary:
+          "border-2 border-border bg-secondary text-secondary-foreground shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -52,4 +61,4 @@ function Button({
   );
 }
 
-export { Button, buttonVariants };
+export { Button };
