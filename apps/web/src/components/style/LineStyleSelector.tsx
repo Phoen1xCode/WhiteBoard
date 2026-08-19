@@ -15,7 +15,7 @@ export function LineStyleSelector({ value, onChange }: LineStyleSelectorProps) {
 
   return (
     <div className="space-y-3">
-      <Label className="text-xs font-medium text-muted-foreground">线条样式</Label>
+      <Label className="text-muted-foreground text-xs font-medium">线条样式</Label>
       <ToggleGroup
         type="single"
         value={currentValue}
@@ -27,14 +27,14 @@ export function LineStyleSelector({ value, onChange }: LineStyleSelectorProps) {
       >
         <ToggleGroupItem
           value="solid"
-          className="h-9 flex-1 border border-input hover:bg-accent hover:text-accent-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          className="border-input hover:bg-accent hover:text-accent-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary h-9 flex-1 border"
           aria-label="Solid line"
         >
           <div className="h-0 w-8 border-t-2 border-current" />
         </ToggleGroupItem>
         <ToggleGroupItem
           value="dashed"
-          className="h-9 flex-1 border border-input hover:bg-accent hover:text-accent-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          className="border-input hover:bg-accent hover:text-accent-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary h-9 flex-1 border"
           aria-label="Dashed line"
         >
           <div className="h-0 w-8 border-t-2 border-dashed border-current" />

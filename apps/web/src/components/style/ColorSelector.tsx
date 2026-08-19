@@ -17,7 +17,7 @@ interface ColorSelectorProps {
 export function ColorSelector({ value, onChange, presetColors }: ColorSelectorProps) {
   return (
     <div className="space-y-3">
-      <Label className="text-xs font-medium text-muted-foreground">线条颜色</Label>
+      <Label className="text-muted-foreground text-xs font-medium">线条颜色</Label>
       <div className="flex items-center gap-3">
         <Popover>
           <PopoverTrigger asChild>
@@ -59,7 +59,7 @@ export function ColorSelector({ value, onChange, presetColors }: ColorSelectorPr
                       onClick={() => onChange(color)}
                       className={cn(
                         "h-7 w-7 rounded-md border-2 p-0 transition-all hover:scale-110",
-                        value === color ? "ring-2 ring-primary ring-offset-2" : "border-border",
+                        value === color ? "ring-primary ring-2 ring-offset-2" : "border-border",
                       )}
                       style={{ backgroundColor: color }}
                       aria-label={`Select color ${color}`}
@@ -70,7 +70,7 @@ export function ColorSelector({ value, onChange, presetColors }: ColorSelectorPr
             </div>
           </PopoverContent>
         </Popover>
-        <span className="font-mono text-xs text-muted-foreground uppercase">{value}</span>
+        <span className="text-muted-foreground font-mono text-xs uppercase">{value}</span>
       </div>
     </div>
   );

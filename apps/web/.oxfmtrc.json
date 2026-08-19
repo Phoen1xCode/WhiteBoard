@@ -18,7 +18,7 @@
     ]
   },
   "sortTailwindcss": {
-    "stylesheet": "./src/styles/style.css",
+    "stylesheet": "./src/styles/global.css",
     "functions": ["clsx", "cn", "cva"]
   }
 }

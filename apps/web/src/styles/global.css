@@ -4,15 +4,38 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(95.38% 0.0357 72.89);
+  --background: #fffaef;
   --secondary-background: oklch(100% 0 0);
-  --foreground: oklch(0% 0 0);
-  --main-foreground: oklch(0% 0 0);
-  --main: oklch(72.27% 0.1894 50.19);
-  --border: oklch(0% 0 0);
-  --ring: oklch(0% 0 0);
+  --foreground: #141111;
+  --main-foreground: #141111;
+  --main: #fe7da8;
+  --border: #141111;
+  --ring: #fe7da8;
   --overlay: oklch(0% 0 0 / 0.8);
   --shadow: 4px 4px 0px 0px var(--border);
+  --card: #ffffff;
+  --card-foreground: #141111;
+  --popover: #ffffff;
+  --popover-foreground: #141111;
+  --primary: #fe7da8;
+  --primary-foreground: #141111;
+  --secondary: #ffd440;
+  --secondary-foreground: #141111;
+  --muted: #f3eee4;
+  --muted-foreground: #726e6a;
+  --accent: #8be9fd;
+  --accent-foreground: #141111;
+  --destructive: #e45757;
+  --destructive-foreground: #ffffff;
+  --input: #141111;
+  --sidebar: #f6f1e6;
+  --sidebar-foreground: #141111;
+  --sidebar-primary: #fe7da8;
+  --sidebar-primary-foreground: #141111;
+  --sidebar-border: #141111;
+  --sidebar-accent: #ffd440;
+  --sidebar-accent-foreground: #141111;
+  --sidebar-ring: #fe7da8;
   --chart-1: #ff7a05;
   --chart-2: #0099ff;
   --chart-3: #ffbf00;
@@ -47,11 +70,37 @@
   --color-border: var(--border);
   --color-overlay: var(--overlay);
   --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  --font-sans: "Space Grotesk Variable", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, monospace;
 
   --spacing-boxShadowX: 4px;
   --spacing-boxShadowY: 4px;
@@ -65,7 +114,7 @@
 
 @layer base {
   body {
-    @apply bg-background font-base text-foreground;
+    @apply bg-background font-sans font-base text-foreground;
   }
 
   h1,

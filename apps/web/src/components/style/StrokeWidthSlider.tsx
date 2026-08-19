@@ -16,8 +16,8 @@ export function StrokeWidthSlider({ value, onChange, min = 1, max = 20 }: Stroke
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium text-muted-foreground">线条宽度</Label>
-        <span className="font-mono text-xs text-muted-foreground">{value}px</span>
+        <Label className="text-muted-foreground text-xs font-medium">线条宽度</Label>
+        <span className="text-muted-foreground font-mono text-xs">{value}px</span>
       </div>
       <Slider
         value={[value]}
@@ -28,7 +28,7 @@ export function StrokeWidthSlider({ value, onChange, min = 1, max = 20 }: Stroke
         className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
         aria-label="Stroke width"
       />
-      <div className="flex justify-between text-[10px] text-muted-foreground">
+      <div className="text-muted-foreground flex justify-between text-[10px]">
         <span>{min}px</span>
         <span>{max}px</span>
       </div>
