@@ -1,19 +1,46 @@
-import { Loader2, Plus, Trash2, ExternalLink, LogOut } from "lucide-react";
+import { Loader2, PenLine, Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  BoardCard,
+  DashboardHeader,
+  DashboardLayout,
+} from "@/components/dashboard/DashboardLayout";
 import { createBoard, listBoards, deleteBoard, logout, type BoardListItem } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+
+const PREVIEW_COLORS = [
+  "bg-[#FEF9C3]",
+  "bg-[#DBEAFE]",
+  "bg-[#FCE7F3]",
+  "bg-[#DCFCE7]",
+  "bg-[#F1F5F9]",
+];
+
+function NewBoardButton({ onClick, isCreating }: { onClick: () => void; isCreating: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isCreating}
+      className="flex items-center justify-center gap-1.5 rounded-none border-2 border-border bg-primary px-4 py-2 shadow-[2px_2px_0px_0px_var(--border)] disabled:opacity-60"
+    >
+      {isCreating ? (
+        <Loader2 className="size-4 animate-spin text-primary-foreground" />
+      ) : (
+        <Plus className="size-4 text-primary-foreground" />
+      )}
+      <span className="text-sm font-medium text-primary-foreground">新建白板</span>
+    </button>
+  );
+}
 
 export function HomePage() {
   const navigate = useNavigate();
   const user = getStoredUser();
-  const [title, setTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [boards, setBoards] = useState<BoardListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +63,7 @@ export function HomePage() {
   async function handleCreateBoard() {
     setIsCreating(true);
     try {
-      const board = await createBoard(title || "Untitled Board");
+      const board = await createBoard("Untitled Board");
       navigate(`/board/${board.id}`);
     } catch (error) {
       console.error("Failed to create board:", error);
@@ -70,125 +97,84 @@ export function HomePage() {
     });
   }
 
+  async function handleLogout() {
+    try {
+      await logout();
+    } catch {
+      // session cleared client-side anyway
+    }
+    navigate("/login");
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4 md:p-8">
-      <div className="bg-grid-slate-100 absolute inset-0 -z-10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+    <DashboardLayout
+      activeNav="boards"
+      userName={user?.username ?? "李雷"}
+      userEmail={user?.email ?? "li.lei@example.com"}
+      onLogout={handleLogout}
+    >
+      <DashboardHeader
+        title="我的白板"
+        subtitle={
+          boards.length === 0
+            ? "还没有白板，从第一块开始吧"
+            : `共 ${boards.length} 个白板，最近更新按时间排序`
+        }
+        action={<NewBoardButton onClick={handleCreateBoard} isCreating={isCreating} />}
+      />
 
-      <div className="mx-auto max-w-4xl space-y-8">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2 text-left">
-            <h1 className="text-4xl font-bold text-gray-900">WhiteBoard 协作白板</h1>
-            {user && <p className="text-sm text-gray-600">已登录：{user.username}</p>}
-          </div>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              try {
-                await logout();
-              } catch {
-                // session cleared client-side anyway
-              }
-              navigate("/login");
-            }}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            退出
-          </Button>
+      {isLoading ? (
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
         </div>
-
-        {/* Create New Board */}
-        <Card className="border-border/50 shadow-xl">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">新建白板</CardTitle>
-            <CardDescription>创建一个新的白板</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="board-title">白板标题（可选）</Label>
-                <Input
-                  id="board-title"
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Untitled Board"
-                  disabled={isCreating}
-                  onKeyDown={(e) => e.key === "Enter" && handleCreateBoard()}
-                />
-              </div>
-              <div className="flex items-end">
-                <Button onClick={handleCreateBoard} disabled={isCreating} size="lg">
-                  {isCreating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      创建中...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      创建
-                    </>
+      ) : boards.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+          <div className="flex size-18 items-center justify-center rounded-xl border-2 border-border bg-muted">
+            <PenLine className="size-8 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">还没有白板</h2>
+          <p className="text-sm text-muted-foreground">创建你的第一块白板，把想法画出来</p>
+          <NewBoardButton onClick={handleCreateBoard} isCreating={isCreating} />
+        </div>
+      ) : (
+        <div className="grid w-full grid-cols-3 gap-6">
+          {boards.map((board, index) => (
+            <BoardCard
+              key={board.id}
+              title={board.title}
+              meta={`更新于 ${formatDate(board.updatedAt)}`}
+              previewClass={PREVIEW_COLORS[index % PREVIEW_COLORS.length]}
+              onClick={() => navigate(`/board/${board.id}`)}
+              previewOverlay={
+                <button
+                  type="button"
+                  aria-label="删除白板"
+                  onClick={(e) => handleDeleteBoard(board.id, e)}
+                  className={cn(
+                    "absolute top-2.5 right-2.5 flex size-7 items-center justify-center",
+                    "rounded-md border-2 border-border bg-card shadow-[2px_2px_0px_0px_var(--border)]",
                   )}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Board List */}
-        <Card className="border-border/50 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-xl">白板创建记录</CardTitle>
-            <CardDescription>之前创建的白板</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              </div>
-            ) : boards.length === 0 ? (
-              <div className="py-8 text-center text-gray-500">暂无白板 请创建新的白板</div>
+                >
+                  <Trash2 className="size-3.5 text-destructive" />
+                </button>
+              }
+            />
+          ))}
+          <button
+            type="button"
+            onClick={handleCreateBoard}
+            disabled={isCreating}
+            className="flex min-h-[195px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-border bg-muted p-4"
+          >
+            {isCreating ? (
+              <Loader2 className="size-7 animate-spin text-muted-foreground" />
             ) : (
-              <div className="space-y-2">
-                {boards.map((board) => (
-                  <div
-                    key={board.id}
-                    className="group flex cursor-pointer items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
-                    onClick={() => navigate(`/board/${board.id}`)}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate font-medium text-gray-900">{board.title}</h3>
-                      <p className="text-sm text-gray-500">更新于 {formatDate(board.updatedAt)}</p>
-                    </div>
-                    <div className="ml-4 flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 transition-opacity group-hover:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`/board/${board.id}`, "_blank");
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-                        onClick={(e) => handleDeleteBoard(board.id, e)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Plus className="size-7 text-muted-foreground" />
             )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            <span className="text-sm font-medium text-muted-foreground">新建白板</span>
+          </button>
+        </div>
+      )}
+    </DashboardLayout>
   );
 }
