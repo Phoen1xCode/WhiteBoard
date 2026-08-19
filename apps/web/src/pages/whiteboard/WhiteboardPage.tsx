@@ -44,7 +44,7 @@ function MenuButton() {
   return (
     <button
       type="button"
-      className="absolute left-4 top-4 flex size-9 items-center justify-center border-2 border-border bg-background shadow-[2px_2px_0px_0px_var(--border)]"
+      className="absolute top-4 left-4 flex size-9 items-center justify-center border-2 border-border bg-background shadow-[2px_2px_0px_0px_var(--border)]"
       aria-label="菜单"
     >
       <Menu className="size-4" />
@@ -53,12 +53,12 @@ function MenuButton() {
 }
 
 function Logo() {
-  return <span className="absolute left-[68px] top-[26px] text-lg font-bold">Whiteboard</span>;
+  return <span className="absolute top-[26px] left-[68px] text-lg font-bold">Whiteboard</span>;
 }
 
 function Toolbar() {
   return (
-    <div className="absolute left-1/2 top-4 flex -translate-x-1/2 items-center gap-0.5 rounded-lg border-2 border-border bg-card p-1.5 text-card-foreground shadow-[2px_2px_0px_0px_var(--border)]">
+    <div className="absolute top-4 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-lg border-2 border-border bg-card p-1.5 text-card-foreground shadow-[2px_2px_0px_0px_var(--border)]">
       {TOOLS.map(({ icon: Icon, label, active }) => (
         <button
           key={label}
@@ -75,7 +75,7 @@ function Toolbar() {
 
 function TopRight() {
   return (
-    <div className="absolute right-4 top-4 flex items-center gap-3">
+    <div className="absolute top-4 right-4 flex items-center gap-3">
       {AVATARS.map((avatar) => (
         <div
           key={avatar.initial}
@@ -116,7 +116,7 @@ function HelpButton() {
   return (
     <button
       type="button"
-      className="absolute bottom-4 right-4 flex size-9 items-center justify-center border-2 border-border bg-background shadow-[2px_2px_0px_0px_var(--border)]"
+      className="absolute right-4 bottom-4 flex size-9 items-center justify-center border-2 border-border bg-background shadow-[2px_2px_0px_0px_var(--border)]"
       aria-label="帮助"
     >
       <CircleHelp className="size-4" />
@@ -127,17 +127,17 @@ function HelpButton() {
 function CanvasContent() {
   return (
     <>
-      <p className="absolute left-[200px] top-[180px] text-xl font-semibold">
+      <p className="absolute top-[180px] left-[200px] text-xl font-semibold">
         周五产品脑暴 · 首页改版方向
       </p>
-      <div className="absolute left-[200px] top-[250px] size-[180px] rotate-[-4deg] border-2 border-border bg-[#FEF08A] p-[14px] shadow-[2px_2px_0px_0px_var(--border)]">
-        <p className="text-sm font-medium leading-6">💡 脑暴：Hero 区先做 3 个方向</p>
+      <div className="absolute top-[250px] left-[200px] size-[180px] rotate-[-4deg] border-2 border-border bg-[#FEF08A] p-[14px] shadow-[2px_2px_0px_0px_var(--border)]">
+        <p className="text-sm leading-6 font-medium">💡 脑暴：Hero 区先做 3 个方向</p>
       </div>
-      <div className="absolute left-[500px] top-[290px] flex h-[180px] w-[300px] rotate-[1deg] items-center justify-center rounded-[4px] border-2 border-foreground">
+      <div className="absolute top-[290px] left-[500px] flex h-[180px] w-[300px] rotate-[1deg] items-center justify-center rounded-[4px] border-2 border-foreground">
         <p className="text-[15px] font-medium">新版首页结构草图</p>
       </div>
-      <div className="absolute left-[930px] top-[280px] h-[150px] w-[210px] rotate-[-2deg] rounded-full border-2 border-foreground" />
-      <p className="absolute left-[985px] top-[450px] text-sm font-medium text-muted-foreground">
+      <div className="absolute top-[280px] left-[930px] h-[150px] w-[210px] rotate-[-2deg] rounded-full border-2 border-foreground" />
+      <p className="absolute top-[450px] left-[985px] text-sm font-medium text-muted-foreground">
         核心指标
       </p>
     </>
@@ -154,7 +154,7 @@ export function WhiteboardShell({ children }: { children?: ReactNode }) {
       <TopRight />
       <ZoomControls />
       <HelpButton />
-      <StatusNotification status="online" className="absolute bottom-[65px] right-4" />
+      <StatusNotification status="online" className="absolute right-4 bottom-[65px]" />
       {children}
     </div>
   );

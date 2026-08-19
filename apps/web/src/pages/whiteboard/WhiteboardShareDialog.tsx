@@ -34,7 +34,7 @@ function ShareDialog() {
   return (
     <>
       <div className="absolute inset-0 bg-black/40" />
-      <div className="absolute left-1/2 top-[219px] flex w-[440px] -translate-x-1/2 flex-col gap-4 rounded-lg border-2 border-border bg-card p-6 text-card-foreground shadow-shadow">
+      <div className="absolute top-[219px] left-1/2 flex w-[440px] -translate-x-1/2 flex-col gap-4 rounded-lg border-2 border-border bg-card p-6 text-card-foreground shadow-shadow">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">分享白板</h2>
           <button type="button" aria-label="关闭" className="flex items-center justify-center p-2">

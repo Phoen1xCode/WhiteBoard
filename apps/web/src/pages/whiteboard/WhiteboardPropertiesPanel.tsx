@@ -57,7 +57,7 @@ const HANDLE_POSITIONS = [
 
 function SelectionBox() {
   return (
-    <div className="absolute left-[490px] top-[280px] h-[200px] w-[320px] border-2 border-ring">
+    <div className="absolute top-[280px] left-[490px] h-[200px] w-[320px] border-2 border-ring">
       {HANDLE_POSITIONS.map((position) => (
         <div
           key={position}
@@ -110,7 +110,7 @@ function OptionBox({
 
 function PropertiesPanel() {
   return (
-    <div className="absolute left-4 top-[60px] flex w-[200px] flex-col gap-3.5 rounded-lg border-2 border-border bg-popover p-4 text-popover-foreground shadow-shadow">
+    <div className="absolute top-[60px] left-4 flex w-[200px] flex-col gap-3.5 rounded-lg border-2 border-border bg-popover p-4 text-popover-foreground shadow-shadow">
       <PanelLabel>描边</PanelLabel>
       <div className="flex gap-2">
         {STROKE_COLORS.map((color) => (
@@ -166,8 +166,8 @@ function PropertiesPanel() {
       <PanelLabel>透明度</PanelLabel>
       <div className="flex flex-col gap-1">
         <div className="relative h-4 w-full">
-          <div className="absolute left-0 top-[6px] h-1 w-full rounded-[2px] border border-border bg-muted" />
-          <div className="absolute left-[110px] top-0 size-4 rounded-full border-2 border-border bg-foreground" />
+          <div className="absolute top-[6px] left-0 h-1 w-full rounded-[2px] border border-border bg-muted" />
+          <div className="absolute top-0 left-[110px] size-4 rounded-full border-2 border-border bg-foreground" />
         </div>
         <div className="flex justify-between">
           <span className="font-mono text-[11px] text-muted-foreground">0</span>

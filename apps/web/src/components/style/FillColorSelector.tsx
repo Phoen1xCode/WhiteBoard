@@ -19,7 +19,7 @@ interface FillColorSelectorProps {
 export function FillColorSelector({ value, onChange, presetColors }: FillColorSelectorProps) {
   return (
     <div className="space-y-3">
-      <Label className="text-muted-foreground text-xs font-medium">填充颜色（可选）</Label>
+      <Label className="text-xs font-medium text-muted-foreground">填充颜色（可选）</Label>
       <div className="flex items-center gap-3">
         <Popover>
           <PopoverTrigger asChild>
@@ -29,7 +29,7 @@ export function FillColorSelector({ value, onChange, presetColors }: FillColorSe
               style={value ? { backgroundColor: value } : undefined}
               aria-label={value ? `当前填充颜色: ${value}` : "无填充颜色"}
             >
-              {!value && <X className="text-muted-foreground h-4 w-4" />}
+              {!value && <X className="h-4 w-4 text-muted-foreground" />}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3" align="start">
@@ -60,7 +60,7 @@ export function FillColorSelector({ value, onChange, presetColors }: FillColorSe
                       onClick={() => onChange(color)}
                       className={cn(
                         "h-7 w-7 rounded-md border-2 p-0 transition-all hover:scale-110",
-                        value === color ? "ring-primary ring-2 ring-offset-2" : "border-border",
+                        value === color ? "ring-2 ring-primary ring-offset-2" : "border-border",
                       )}
                       style={{ backgroundColor: color }}
                       aria-label={`Select fill color ${color}`}
@@ -81,7 +81,7 @@ export function FillColorSelector({ value, onChange, presetColors }: FillColorSe
             </div>
           </PopoverContent>
         </Popover>
-        <span className="text-muted-foreground font-mono text-xs uppercase">{value || "None"}</span>
+        <span className="font-mono text-xs text-muted-foreground uppercase">{value || "None"}</span>
       </div>
     </div>
   );
