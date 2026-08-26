@@ -36,7 +36,6 @@ export function SignupPage() {
 
       <div className="flex w-full max-w-[400px] flex-col gap-[16px] rounded-lg border-2 border-border bg-card p-[32px] shadow-[4px_4px_0px_0px_var(--border)]">
         <h1 className="text-[24px] font-bold text-foreground">创建账户</h1>
-        <p className="text-[14px] text-muted-foreground">注册即可免费创建无限白板</p>
 
         <form className="flex flex-col gap-[16px]" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-[6px]">
@@ -54,6 +53,7 @@ export function SignupPage() {
               className="rounded-none border-2 border-input bg-background px-[12px] py-[10px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
+
           <div className="flex flex-col gap-[6px]">
             <label htmlFor="email" className="text-[14px] font-medium text-foreground">
               邮箱
@@ -69,6 +69,7 @@ export function SignupPage() {
               className="rounded-none border-2 border-input bg-background px-[12px] py-[10px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
+
           <div className="flex flex-col gap-[6px]">
             <label htmlFor="password" className="text-[14px] font-medium text-foreground">
               密码
@@ -85,6 +86,7 @@ export function SignupPage() {
               className="rounded-none border-2 border-input bg-background px-[12px] py-[10px] text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
+
           <button
             type="submit"
             disabled={loading}
