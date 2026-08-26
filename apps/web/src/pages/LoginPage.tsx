@@ -1,5 +1,5 @@
 import { Link, useRouter, useSearch } from "@tanstack/react-router";
-import { CircleAlert, Loader2, PenLine, Plus } from "lucide-react";
+import { CircleAlert, Loader2, PenLine } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -94,20 +94,6 @@ export function LoginPage() {
             登录
           </button>
         </form>
-
-        <div className="flex items-center gap-[12px] py-[4px]">
-          <div className="h-[2px] flex-1 bg-border" />
-          <span className="text-[12px] text-muted-foreground">或</span>
-          <div className="h-[2px] flex-1 bg-border" />
-        </div>
-
-        <button
-          type="button"
-          className="flex w-full items-center justify-center gap-[6px] rounded-none border-2 border-border bg-background px-[16px] py-[8px] text-[14px] font-medium text-foreground shadow-[2px_2px_0px_0px_var(--border)]"
-        >
-          <Plus className="h-[16px] w-[16px]" />
-          使用 GitHub 登录
-        </button>
 
         <div className="flex justify-center gap-[6px] pt-[4px]">
           <span className="text-[13px] text-muted-foreground">还没有账户？</span>
