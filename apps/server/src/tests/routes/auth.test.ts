@@ -78,6 +78,39 @@ describe("auth routes", () => {
     });
   });
 
+  it("keeps username length validation aligned with the public form", async () => {
+    const { app } = setup();
+    const accepted = await app.request("/api/v1/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: user.email,
+        username: "abc",
+        password: "password123",
+      }),
+    });
+    const rejected = await app.request("/api/v1/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: user.email,
+        username: "abcdefghijklmnop",
+        password: "password123",
+      }),
+    });
+
+    expect(accepted.status).toBe(201);
+    expect(rejected.status).toBe(400);
+    expect(await rejected.json()).toMatchObject({
+      error: { code: "VALIDATION_ERROR" },
+    });
+    expect(mocks.service.register).toHaveBeenCalledTimes(1);
+    expect(mocks.service.register).toHaveBeenCalledWith(
+      expect.objectContaining({ username: "abc" }),
+      expect.any(Headers),
+    );
+  });
+
   it("maps Better Auth rate limiting onto login and register", async () => {
     mocks.authHandler.mockResolvedValue(
       new Response(JSON.stringify({ message: "Too many requests. Please try again later." }), {

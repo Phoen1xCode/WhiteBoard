@@ -1,9 +1,20 @@
 import { z } from "zod";
 
+export const registerFieldConstraints = {
+  username: { minLength: 3, maxLength: 15 },
+  password: { minLength: 8, maxLength: 24 },
+} as const;
+
 export const registerBodySchema = z.object({
   email: z.email(),
-  username: z.string().min(4).max(15),
-  password: z.string().min(6).max(24),
+  username: z
+    .string()
+    .min(registerFieldConstraints.username.minLength)
+    .max(registerFieldConstraints.username.maxLength),
+  password: z
+    .string()
+    .min(registerFieldConstraints.password.minLength)
+    .max(registerFieldConstraints.password.maxLength),
 });
 
 export type RegisterInput = z.infer<typeof registerBodySchema>;

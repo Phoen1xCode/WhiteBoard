@@ -1,5 +1,6 @@
 import type { AuthenticatedUser } from "@whiteboard/shared/schemas";
 
+import { registerFieldConstraints } from "@whiteboard/shared/schemas";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { bearer, jwt, username } from "better-auth/plugins";
@@ -16,6 +17,8 @@ export const auth = betterAuth({
   basePath: "/api/v1/auth",
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: registerFieldConstraints.password.minLength,
+    maxPasswordLength: registerFieldConstraints.password.maxLength,
   },
   rateLimit: {
     enabled: true,
@@ -32,9 +35,9 @@ export const auth = betterAuth({
   plugins: [
     bearer(),
     username({
-      minUsernameLength: 4,
-      maxUsernameLength: 15,
-      // Match the existing public register contract (any 3–50 char handle).
+      minUsernameLength: registerFieldConstraints.username.minLength,
+      maxUsernameLength: registerFieldConstraints.username.maxLength,
+      // The shared public contract permits Unicode handles.
       usernameValidator: () => true,
     }),
     jwt(),
