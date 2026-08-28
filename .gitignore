@@ -33,7 +33,8 @@ dist-ssr
 .agents
 .claude
 
-# Database ORM
+# Generated caches
+**/.tanstack/
 **/prisma/generated
 
 # Documentation
