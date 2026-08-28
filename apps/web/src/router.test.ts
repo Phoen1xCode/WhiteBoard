@@ -31,6 +31,20 @@ describe("app router", () => {
     expect(router.state.matches.at(-1)?.routeId).toBe("/_authenticated/");
   });
 
+  it.each([
+    ["/shared", "/_authenticated/shared"],
+    ["/favorites", "/_authenticated/favorites"],
+    ["/settings", "/_authenticated/settings"],
+    ["/trash", "/_authenticated/trash"],
+  ])("匹配受保护的侧边栏页面 %s", async (path, routeId) => {
+    const router = createTestRouter(path, true);
+
+    await router.load();
+
+    expect(router.state.location.pathname).toBe(path);
+    expect(router.state.matches.at(-1)?.routeId).toBe(routeId);
+  });
+
   it("以类型安全的动态参数匹配白板路由", async () => {
     const router = createTestRouter("/board/board-1", true);
 

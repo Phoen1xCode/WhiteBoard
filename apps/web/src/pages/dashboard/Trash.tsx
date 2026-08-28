@@ -5,6 +5,7 @@ import {
   DashboardHeader,
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
+import { Button } from "@/components/ui/button";
 
 const boards = [
   { title: "旧版 Logo 草图", meta: "3 天前删除", previewClass: "bg-[#FEF9C3]" },
@@ -18,13 +19,10 @@ export function Trash() {
         title="回收站"
         subtitle="删除的白板会保留 30 天，到期后自动清除"
         action={
-          <button
-            type="button"
-            className="flex items-center justify-center gap-1.5 rounded-none border-2 border-border bg-destructive px-4 py-2 shadow-[2px_2px_0px_0px_var(--border)]"
-          >
-            <Trash2 className="size-4 text-primary-foreground" />
-            <span className="text-sm font-medium text-primary-foreground">清空回收站</span>
-          </button>
+          <Button type="button" variant="destructive">
+            <Trash2 />
+            清空回收站
+          </Button>
         }
       />
 

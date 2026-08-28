@@ -8,9 +8,9 @@ import {
   DashboardHeader,
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
-import { createBoard, listBoards, deleteBoard, logout, type BoardListItem } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { createBoard, deleteBoard, listBoards, type BoardListItem } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
-import { cn } from "@/lib/utils";
 
 const PREVIEW_COLORS = [
   "bg-[#FEF9C3]",
@@ -22,19 +22,10 @@ const PREVIEW_COLORS = [
 
 function NewBoardButton({ onClick, isCreating }: { onClick: () => void; isCreating: boolean }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={isCreating}
-      className="flex items-center justify-center gap-1.5 rounded-none border-2 border-border bg-primary px-4 py-2 shadow-[2px_2px_0px_0px_var(--border)] disabled:opacity-60"
-    >
-      {isCreating ? (
-        <Loader2 className="size-4 animate-spin text-primary-foreground" />
-      ) : (
-        <Plus className="size-4 text-primary-foreground" />
-      )}
-      <span className="text-sm font-medium text-primary-foreground">新建白板</span>
-    </button>
+    <Button type="button" onClick={onClick} disabled={isCreating}>
+      {isCreating ? <Loader2 className="animate-spin" /> : <Plus />}
+      新建白板
+    </Button>
   );
 }
 
@@ -97,22 +88,8 @@ export function HomePage() {
     });
   }
 
-  async function handleLogout() {
-    try {
-      await logout();
-    } catch {
-      // session cleared client-side anyway
-    }
-    await navigate({ to: "/login", replace: true });
-  }
-
   return (
-    <DashboardLayout
-      activeNav="boards"
-      userName={user?.username ?? "李雷"}
-      userEmail={user?.email ?? "li.lei@example.com"}
-      onLogout={handleLogout}
-    >
+    <DashboardLayout activeNav="boards" userName={user?.username} userEmail={user?.email}>
       <DashboardHeader
         title="我的白板"
         subtitle={
@@ -129,10 +106,10 @@ export function HomePage() {
         </div>
       ) : boards.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-          <div className="flex size-18 items-center justify-center rounded-xl border-2 border-border bg-muted">
+          <div className="flex size-18 items-center justify-center rounded-base border-2 border-border bg-muted">
             <PenLine className="size-8 text-muted-foreground" />
           </div>
-          <h2 className="text-xl font-semibold text-foreground">还没有白板</h2>
+          <h2 className="text-xl text-foreground">还没有白板</h2>
           <p className="text-sm text-muted-foreground">创建你的第一块白板，把想法画出来</p>
           <NewBoardButton onClick={handleCreateBoard} isCreating={isCreating} />
         </div>
@@ -148,17 +125,16 @@ export function HomePage() {
                 void navigate({ to: "/board/$boardId", params: { boardId: board.id } })
               }
               previewOverlay={
-                <button
+                <Button
                   type="button"
+                  variant="neutral"
+                  size="icon"
                   aria-label="删除白板"
                   onClick={(e) => handleDeleteBoard(board.id, e)}
-                  className={cn(
-                    "absolute top-2.5 right-2.5 flex size-7 items-center justify-center",
-                    "rounded-md border-2 border-border bg-card shadow-[2px_2px_0px_0px_var(--border)]",
-                  )}
+                  className="absolute top-2.5 right-2.5 size-7"
                 >
-                  <Trash2 className="size-3.5 text-destructive" />
-                </button>
+                  <Trash2 className="text-destructive" />
+                </Button>
               }
             />
           ))}
@@ -166,14 +142,14 @@ export function HomePage() {
             type="button"
             onClick={handleCreateBoard}
             disabled={isCreating}
-            className="flex min-h-[195px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-border bg-muted p-4"
+            className="flex min-h-[195px] flex-col items-center justify-center gap-2 rounded-base border-2 border-border bg-muted p-4 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden"
           >
             {isCreating ? (
               <Loader2 className="size-7 animate-spin text-muted-foreground" />
             ) : (
               <Plus className="size-7 text-muted-foreground" />
             )}
-            <span className="text-sm font-medium text-muted-foreground">新建白板</span>
+            <span className="text-sm text-muted-foreground">新建白板</span>
           </button>
         </div>
       )}

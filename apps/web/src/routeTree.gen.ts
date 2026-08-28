@@ -15,6 +15,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as AuthenticatedFavoritesRouteImport } from './routes/_authenticated.favorites'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated.shared'
+import { Route as AuthenticatedTrashRouteImport } from './routes/_authenticated.trash'
 import { Route as AuthenticatedBoardBoardIdRouteImport } from './routes/_authenticated.board.$boardId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -46,6 +50,26 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFavoritesRoute = AuthenticatedFavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSharedRoute = AuthenticatedSharedRouteImport.update({
+  id: '/shared',
+  path: '/shared',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTrashRoute = AuthenticatedTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBoardBoardIdRoute =
   AuthenticatedBoardBoardIdRouteImport.update({
     id: '/board/$boardId',
@@ -59,6 +83,10 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/favorites': typeof AuthenticatedFavoritesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/shared': typeof AuthenticatedSharedRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/board/$boardId': typeof AuthenticatedBoardBoardIdRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +94,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/favorites': typeof AuthenticatedFavoritesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/shared': typeof AuthenticatedSharedRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/': typeof AuthenticatedIndexRoute
   '/board/$boardId': typeof AuthenticatedBoardBoardIdRoute
 }
@@ -76,6 +108,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/favorites': typeof AuthenticatedFavoritesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/shared': typeof AuthenticatedSharedRoute
+  '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/board/$boardId': typeof AuthenticatedBoardBoardIdRoute
 }
@@ -87,6 +123,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/favorites'
+    | '/settings'
+    | '/shared'
+    | '/trash'
     | '/board/$boardId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -94,6 +134,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/favorites'
+    | '/settings'
+    | '/shared'
+    | '/trash'
     | '/'
     | '/board/$boardId'
   id:
@@ -103,6 +147,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/_authenticated/favorites'
+    | '/_authenticated/settings'
+    | '/_authenticated/shared'
+    | '/_authenticated/trash'
     | '/_authenticated/'
     | '/_authenticated/board/$boardId'
   fileRoutesById: FileRoutesById
@@ -159,6 +207,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/favorites': {
+      id: '/_authenticated/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof AuthenticatedFavoritesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/shared': {
+      id: '/_authenticated/shared'
+      path: '/shared'
+      fullPath: '/shared'
+      preLoaderRoute: typeof AuthenticatedSharedRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/trash': {
+      id: '/_authenticated/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof AuthenticatedTrashRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/board/$boardId': {
       id: '/_authenticated/board/$boardId'
       path: '/board/$boardId'
@@ -170,11 +246,19 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedFavoritesRoute: typeof AuthenticatedFavoritesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSharedRoute: typeof AuthenticatedSharedRoute
+  AuthenticatedTrashRoute: typeof AuthenticatedTrashRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedBoardBoardIdRoute: typeof AuthenticatedBoardBoardIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedFavoritesRoute: AuthenticatedFavoritesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSharedRoute: AuthenticatedSharedRoute,
+  AuthenticatedTrashRoute: AuthenticatedTrashRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedBoardBoardIdRoute: AuthenticatedBoardBoardIdRoute,
 }
