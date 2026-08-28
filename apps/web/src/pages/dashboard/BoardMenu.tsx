@@ -5,6 +5,8 @@ import {
   DashboardHeader,
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 const boards = [
@@ -24,23 +26,23 @@ const menuItems = [
 
 function CardMenu() {
   return (
-    <div className="absolute top-11 right-3 z-10 flex w-[180px] flex-col rounded-none border-2 border-border bg-popover p-1 shadow-[4px_4px_0px_0px_var(--border)]">
+    <div className="absolute top-11 right-3 z-10 flex w-[180px] flex-col rounded-base border-2 border-border bg-popover p-1 shadow-shadow">
       {menuItems.map((item) => (
         <div
           key={item.label}
           className={cn(
-            "flex cursor-pointer items-center gap-2 rounded px-2.5 py-[7px]",
+            "flex cursor-pointer items-center gap-2 rounded-base px-2.5 py-[7px]",
             item.active && "bg-muted",
           )}
         >
-          <item.icon className="size-[15px] text-foreground" />
-          <span className="text-[13px] text-foreground">{item.label}</span>
+          <item.icon className="size-4 text-foreground" />
+          <span className="text-sm text-foreground">{item.label}</span>
         </div>
       ))}
-      <div className="h-0.5 w-full bg-border" />
-      <div className="flex cursor-pointer items-center gap-2 rounded px-2.5 py-[7px]">
-        <Trash2 className="size-[15px] text-destructive" />
-        <span className="text-[13px] text-destructive">移入回收站</span>
+      <Separator />
+      <div className="flex cursor-pointer items-center gap-2 rounded-base px-2.5 py-[7px]">
+        <Trash2 className="size-4 text-destructive" />
+        <span className="text-sm text-destructive">移入回收站</span>
       </div>
     </div>
   );
@@ -53,13 +55,10 @@ export function BoardMenu() {
         title="我的白板"
         subtitle="共 5 个白板，最近更新按时间排序"
         action={
-          <button
-            type="button"
-            className="flex items-center justify-center gap-1.5 rounded-none border-2 border-border bg-primary px-4 py-2 shadow-[2px_2px_0px_0px_var(--border)]"
-          >
-            <Plus className="size-4 text-primary-foreground" />
-            <span className="text-sm font-medium text-primary-foreground">新建白板</span>
-          </button>
+          <Button type="button">
+            <Plus />
+            新建白板
+          </Button>
         }
       />
 
@@ -73,7 +72,7 @@ export function BoardMenu() {
               highlighted={index === 0}
               previewOverlay={
                 index === 0 ? (
-                  <div className="absolute top-2.5 right-2.5 flex size-[30px] items-center justify-center rounded-md border-2 border-border bg-card shadow-[2px_2px_0px_0px_var(--border)]">
+                  <div className="absolute top-2.5 right-2.5 flex size-[30px] items-center justify-center rounded-base border-2 border-border bg-card shadow-shadow">
                     <Ellipsis className="size-4 text-foreground" />
                   </div>
                 ) : undefined
@@ -82,9 +81,9 @@ export function BoardMenu() {
             {index === 0 && <CardMenu />}
           </div>
         ))}
-        <div className="flex min-h-[195px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-border bg-muted p-4">
+        <div className="flex min-h-[195px] flex-col items-center justify-center gap-2 rounded-base border-2 border-border bg-muted p-4">
           <Plus className="size-7 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">新建白板</span>
+          <span className="text-sm font-base text-muted-foreground">新建白板</span>
         </div>
       </div>
     </DashboardLayout>

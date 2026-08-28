@@ -5,6 +5,7 @@ import {
   DashboardHeader,
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
+import { Button } from "@/components/ui/button";
 
 const boards = [
   { title: "产品脑暴", meta: "2 小时前 · 3 位协作者", previewClass: "bg-[#FEF9C3]" },
@@ -21,13 +22,10 @@ export function DeleteConfirm() {
         title="我的白板"
         subtitle="共 5 个白板，最近更新按时间排序"
         action={
-          <button
-            type="button"
-            className="flex items-center justify-center gap-1.5 rounded-none border-2 border-border bg-primary px-4 py-2 shadow-[2px_2px_0px_0px_var(--border)]"
-          >
-            <Plus className="size-4 text-primary-foreground" />
-            <span className="text-sm font-medium text-primary-foreground">新建白板</span>
-          </button>
+          <Button type="button">
+            <Plus />
+            新建白板
+          </Button>
         }
       />
 
@@ -40,38 +38,32 @@ export function DeleteConfirm() {
             previewClass={board.previewClass}
           />
         ))}
-        <div className="flex min-h-[195px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-border bg-muted p-4">
+        <div className="flex min-h-[195px] flex-col items-center justify-center gap-2 rounded-base border-2 border-border bg-muted p-4">
           <Plus className="size-7 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">新建白板</span>
+          <span className="text-sm font-base text-muted-foreground">新建白板</span>
         </div>
       </div>
 
       {/* Dimmed backdrop + Delete Dialog */}
-      <div className="fixed inset-0 z-40 bg-foreground/50" />
+      <div className="fixed inset-0 z-40 bg-overlay" />
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div className="flex w-[400px] flex-col gap-3.5 rounded-lg border-2 border-border bg-card p-7 shadow-[4px_4px_0px_0px_var(--border)]">
+        <div className="flex w-[400px] flex-col gap-3.5 rounded-base border-2 border-border bg-card p-7 shadow-shadow">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg border-2 border-destructive bg-[#FDE7E7]">
+            <div className="flex size-10 items-center justify-center rounded-base border-2 border-destructive bg-destructive/10">
               <Trash2 className="size-[18px] text-destructive" />
             </div>
-            <h2 className="text-xl font-bold text-foreground">删除白板？</h2>
+            <h2 className="text-xl font-heading text-foreground">删除白板？</h2>
           </div>
           <p className="w-full text-sm leading-normal text-muted-foreground">
             「产品脑暴」将被移入回收站，30 天内可从回收站恢复。
           </p>
           <div className="flex w-full justify-end gap-2.5 pt-1.5">
-            <button
-              type="button"
-              className="flex items-center justify-center gap-1.5 rounded-none border-2 border-border bg-background px-4 py-2 shadow-[2px_2px_0px_0px_var(--border)]"
-            >
-              <span className="text-sm font-medium text-foreground">取消</span>
-            </button>
-            <button
-              type="button"
-              className="flex items-center justify-center gap-1.5 rounded-none border-2 border-border bg-destructive px-4 py-2 shadow-[2px_2px_0px_0px_var(--border)]"
-            >
-              <span className="text-sm font-medium text-destructive-foreground">移入回收站</span>
-            </button>
+            <Button type="button" variant="outline">
+              取消
+            </Button>
+            <Button type="button" variant="destructive">
+              移入回收站
+            </Button>
           </div>
         </div>
       </div>
