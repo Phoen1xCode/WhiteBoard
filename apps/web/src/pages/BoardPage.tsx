@@ -11,6 +11,7 @@ import {
   ConnectionStatus,
   Cursors,
 } from "@/components";
+import { Button } from "@/components/ui/button";
 import { useBoardSync } from "@/hooks/useBoardSync";
 import { useCursors } from "@/hooks/useCursors";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -55,7 +56,7 @@ export function BoardPage() {
   };
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
       {/* Minimal header */}
       <header className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <ConnectionStatus />
@@ -64,13 +65,10 @@ export function BoardPage() {
 
       {/* Home button - top left */}
       <div className="absolute top-4 left-4 z-20">
-        <button
-          onClick={() => void navigate({ to: "/" })}
-          className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-700 shadow-md transition-colors hover:bg-gray-50"
-        >
+        <Button variant="neutral" onClick={() => void navigate({ to: "/" })}>
           <Home size={16} />
-          <span className="text-sm font-medium">Home</span>
-        </button>
+          <span>Home</span>
+        </Button>
       </div>
 
       {/* Canvas area */}

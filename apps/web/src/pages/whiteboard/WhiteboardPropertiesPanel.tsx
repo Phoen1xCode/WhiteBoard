@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { WhiteboardShell } from "@/pages/whiteboard/WhiteboardPage";
 
@@ -61,7 +62,7 @@ function SelectionBox() {
       {HANDLE_POSITIONS.map((position) => (
         <div
           key={position}
-          className={cn("absolute size-3 border-2 border-border bg-white", position)}
+          className={cn("absolute size-3 border-2 border-border bg-secondary-background", position)}
         />
       ))}
     </div>
@@ -69,7 +70,7 @@ function SelectionBox() {
 }
 
 function PanelLabel({ children }: { children: string }) {
-  return <span className="text-[13px] font-semibold">{children}</span>;
+  return <Label>{children}</Label>;
 }
 
 function Swatch({ swatch, selected }: { swatch: string; selected?: boolean }) {
@@ -77,9 +78,9 @@ function Swatch({ swatch, selected }: { swatch: string; selected?: boolean }) {
     <button
       type="button"
       className={cn(
-        "size-6 rounded-[4px] border-2",
+        "size-6 rounded-base border-2 border-border focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
         swatch,
-        selected ? "border-ring shadow-[2px_2px_0px_0px_var(--border)]" : "border-border",
+        selected && "ring-2 ring-ring ring-offset-2",
       )}
     />
   );
@@ -98,7 +99,7 @@ function OptionBox({
     <button
       type="button"
       className={cn(
-        "flex h-8 w-[52px] items-center justify-center rounded-[6px] border-2 border-border",
+        "flex h-8 w-[52px] items-center justify-center rounded-base border-2 border-border focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
         selected ? "bg-secondary" : "bg-muted",
         className,
       )}
@@ -110,7 +111,7 @@ function OptionBox({
 
 function PropertiesPanel() {
   return (
-    <div className="absolute top-[60px] left-4 flex w-[200px] flex-col gap-3.5 rounded-lg border-2 border-border bg-popover p-4 text-popover-foreground shadow-shadow">
+    <div className="absolute top-[60px] left-4 flex w-[200px] flex-col gap-3.5 rounded-base border-2 border-border bg-background p-4 text-foreground shadow-shadow">
       <PanelLabel>描边</PanelLabel>
       <div className="flex gap-2">
         {STROKE_COLORS.map((color) => (
@@ -166,12 +167,12 @@ function PropertiesPanel() {
       <PanelLabel>透明度</PanelLabel>
       <div className="flex flex-col gap-1">
         <div className="relative h-4 w-full">
-          <div className="absolute top-[6px] left-0 h-1 w-full rounded-[2px] border border-border bg-muted" />
+          <div className="absolute top-[6px] left-0 h-1 w-full rounded-base border-2 border-border bg-secondary-background" />
           <div className="absolute top-0 left-[110px] size-4 rounded-full border-2 border-border bg-foreground" />
         </div>
         <div className="flex justify-between">
-          <span className="font-mono text-[11px] text-muted-foreground">0</span>
-          <span className="font-mono text-[11px] text-muted-foreground">100</span>
+          <span className="font-mono text-xs text-muted-foreground">0</span>
+          <span className="font-mono text-xs text-muted-foreground">100</span>
         </div>
       </div>
       <PanelLabel>图层</PanelLabel>
@@ -181,9 +182,9 @@ function PropertiesPanel() {
             key={label}
             type="button"
             aria-label={label}
-            className="flex h-8 w-[38px] items-center justify-center rounded-[6px] border-2 border-border bg-muted"
+            className="flex h-8 w-[38px] items-center justify-center rounded-base border-2 border-border bg-muted focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden"
           >
-            <Icon className="size-[15px]" />
+            <Icon className="size-4" />
           </button>
         ))}
       </div>

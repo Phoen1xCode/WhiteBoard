@@ -52,7 +52,7 @@ export function Toolbar({ boardId }: ToolbarProps) {
   return (
     <TooltipProvider delayDuration={300}>
       {/* Main horizontal toolbar*/}
-      <div className="fixed top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5 shadow-lg">
+      <div className="fixed top-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-base border-2 border-border bg-background p-1.5 shadow-shadow">
         {/* Drawing Tools */}
         <ToggleGroup
           type="single"
@@ -69,18 +69,14 @@ export function Toolbar({ boardId }: ToolbarProps) {
                   <ToggleGroupItem
                     value={tool.type}
                     aria-label={tool.label}
-                    className={`h-9 w-9 rounded-md p-0 transition-all duration-150 ${
-                      isActive
-                        ? "bg-violet-100 text-violet-700 shadow-sm"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    } `}
+                    className="h-9 w-9 p-0"
                   >
-                    <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                    <Icon strokeWidth={isActive ? 2.5 : 2} />
                   </ToggleGroupItem>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={8} className="flex items-center gap-2">
                   <span>{tool.label}</span>
-                  <kbd className="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-xs">
+                  <kbd className="rounded-base border-2 border-border bg-background px-1.5 py-0.5 font-mono text-xs text-foreground">
                     {tool.shortcut}
                   </kbd>
                 </TooltipContent>
@@ -98,20 +94,16 @@ export function Toolbar({ boardId }: ToolbarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-9 w-9 rounded-md transition-all duration-150 ${
-                  canUndo
-                    ? "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    : "cursor-not-allowed text-gray-300"
-                }`}
+                className="h-9 w-9"
                 onClick={() => undo(boardId)}
                 disabled={!canUndo}
               >
-                <Undo2 size={18} />
+                <Undo2 />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" sideOffset={8} className="flex items-center gap-2">
               <span>Undo</span>
-              <kbd className="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-xs">
+              <kbd className="rounded-base border-2 border-border bg-background px-1.5 py-0.5 font-mono text-xs text-foreground">
                 Ctrl+Z
               </kbd>
             </TooltipContent>
@@ -122,20 +114,16 @@ export function Toolbar({ boardId }: ToolbarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-9 w-9 rounded-md transition-all duration-150 ${
-                  canRedo
-                    ? "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    : "cursor-not-allowed text-gray-300"
-                }`}
+                className="h-9 w-9"
                 onClick={() => redo(boardId)}
                 disabled={!canRedo}
               >
-                <Redo2 size={18} />
+                <Redo2 />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" sideOffset={8} className="flex items-center gap-2">
               <span>Redo</span>
-              <kbd className="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-xs">
+              <kbd className="rounded-base border-2 border-border bg-background px-1.5 py-0.5 font-mono text-xs text-foreground">
                 Ctrl+Y
               </kbd>
             </TooltipContent>

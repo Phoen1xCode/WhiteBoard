@@ -21,6 +21,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { WhiteboardShell } from "@/pages/whiteboard/WhiteboardPage";
 
@@ -70,42 +72,38 @@ const CANVAS_BG_SWATCHES = [
 function MenuDivider() {
   return (
     <div className="flex items-center justify-center py-1">
-      <div className="h-0.5 w-full bg-border" />
+      <Separator />
     </div>
   );
 }
 
 function MenuRow({ icon: Icon, label, shortcut, chevron, highlighted, primary }: MenuItem) {
   return (
-    <button
+    <Button
       type="button"
-      className={cn(
-        "flex w-full items-center justify-between gap-2 px-2 py-1.5",
-        highlighted && "bg-accent",
-      )}
+      variant="ghost"
+      className={cn("h-auto w-full justify-between gap-2 px-2 py-1.5", highlighted && "bg-accent")}
     >
       <span className="flex items-center gap-2">
-        <Icon
-          className={cn("size-4", primary || highlighted ? "text-primary" : "text-foreground")}
-        />
+        <Icon className={cn(primary || highlighted ? "text-primary" : "text-foreground")} />
         <span
           className={cn(
             "text-sm",
-            primary || highlighted ? "font-semibold text-primary" : "text-foreground",
+            primary || highlighted ? "font-heading text-primary" : "text-foreground",
           )}
         >
           {label}
         </span>
       </span>
       {shortcut && <span className="font-mono text-xs text-foreground opacity-60">{shortcut}</span>}
-      {chevron && <ChevronRight className="size-4" />}
-    </button>
+      {chevron && <ChevronRight />}
+    </Button>
   );
 }
 
 function MainMenu() {
   return (
-    <div className="absolute top-[60px] left-4 flex w-[280px] flex-col border-2 border-border bg-popover p-1 text-popover-foreground shadow-shadow">
+    <div className="absolute top-[60px] left-4 flex w-[280px] flex-col rounded-base border-2 border-border bg-popover p-1 text-popover-foreground shadow-shadow">
       {MENU_GROUPS.map((item, index) =>
         item === "divider" ? (
           <MenuDivider key={`divider-${index}`} />
@@ -115,14 +113,14 @@ function MainMenu() {
       )}
       <div className="flex items-center justify-between px-2 py-1.5">
         <span className="text-sm">主题</span>
-        <div className="flex gap-0.5 rounded-[6px] border-2 border-border bg-muted p-0.5">
+        <div className="flex gap-0.5 rounded-base border-2 border-border bg-muted p-0.5">
           {THEME_OPTIONS.map(({ icon: Icon, label, active }) => (
             <button
               key={label}
               type="button"
               aria-label={label}
               className={cn(
-                "flex h-6 w-[26px] items-center justify-center rounded-[4px]",
+                "flex h-6 w-[26px] items-center justify-center rounded-base focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
                 active && "bg-primary text-primary-foreground",
               )}
             >
@@ -132,20 +130,21 @@ function MainMenu() {
         </div>
       </div>
       <div className="px-2 pt-0.5 pb-1.5">
-        <button
+        <Button
           type="button"
-          className="flex w-full items-center justify-between rounded-[6px] border-2 border-border bg-card px-2 py-1.5"
+          variant="outline"
+          className="h-auto w-full justify-between px-2 py-1.5"
         >
           <span className="text-sm">简体中文</span>
-          <ChevronDown className="size-[14px] text-muted-foreground" />
-        </button>
+          <ChevronDown className="text-muted-foreground" />
+        </Button>
       </div>
       <div className="px-2.5 pt-1.5 pb-0.5">
         <span className="text-xs text-muted-foreground">画布背景</span>
       </div>
       <div className="flex gap-2 px-2.5 pt-0.5 pb-2">
         {CANVAS_BG_SWATCHES.map((swatch) => (
-          <div key={swatch} className={cn("size-5 rounded-[4px] border-2 border-border", swatch)} />
+          <div key={swatch} className={cn("size-5 rounded-base border-2 border-border", swatch)} />
         ))}
       </div>
     </div>

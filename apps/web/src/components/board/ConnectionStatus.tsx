@@ -15,22 +15,22 @@ const statusConfig: Record<
   connected: {
     icon: Wifi,
     label: "已连接",
-    className: "text-green-600 bg-green-50",
+    className: "bg-accent text-accent-foreground",
   },
   connecting: {
     icon: Loader2,
     label: "连接中...",
-    className: "text-yellow-600 bg-yellow-50",
+    className: "bg-secondary text-secondary-foreground",
   },
   reconnecting: {
     icon: Loader2,
     label: "重新连接中...",
-    className: "text-yellow-600 bg-yellow-50",
+    className: "bg-secondary text-secondary-foreground",
   },
   disconnected: {
     icon: WifiOff,
     label: "已断开连接",
-    className: "text-red-600 bg-red-50",
+    className: "bg-destructive text-destructive-foreground",
   },
 };
 
@@ -49,7 +49,7 @@ export function ConnectionStatus() {
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${config.className}`}
+      className={`flex items-center gap-2 rounded-full border-2 border-border px-3 py-1.5 text-sm font-base shadow-shadow ${config.className}`}
     >
       <Icon size={16} className={isAnimated ? "animate-spin" : ""} />
       <span>{config.label}</span>

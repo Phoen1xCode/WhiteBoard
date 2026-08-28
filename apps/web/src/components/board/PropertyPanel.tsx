@@ -1,7 +1,11 @@
 import type { WhiteBoardElement } from "@whiteboard/shared/types";
 
-import { Trash2, Settings2, X } from "lucide-react";
+import { Settings2, Trash2, X } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 import { useWhiteboardStore } from "@/store/whiteboardStore";
 
 interface Props {
@@ -59,47 +63,51 @@ export function PropertyPanel({ boardId }: Props) {
   };
 
   return (
-    <div className="fixed top-20 right-4 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+    <div className="fixed top-20 right-4 w-56 overflow-hidden rounded-base border-2 border-border bg-background shadow-shadow">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-3 py-2.5">
+      <div className="flex items-center justify-between border-b-2 border-border bg-muted px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <Settings2 size={14} className="text-gray-500" />
-          <span className="text-xs font-medium text-gray-700">
+          <Settings2 size={14} className="text-muted-foreground" />
+          <span className="text-xs font-heading">
             {typeLabels[selectedElement.type] || selectedElement.type}
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleDelete}
-            className="rounded p-1 transition-colors hover:bg-red-100"
+            className="size-7"
             title="Delete (Del)"
           >
-            <Trash2 size={14} className="text-red-500" />
-          </button>
-          <button
+            <Trash2 className="text-destructive" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleClose}
-            className="rounded p-1 transition-colors hover:bg-gray-200"
+            className="size-7"
             title="Close (Esc)"
           >
-            <X size={14} className="text-gray-500" />
-          </button>
+            <X className="text-muted-foreground" />
+          </Button>
         </div>
       </div>
 
       <div className="space-y-4 p-3">
         {/* Stroke Color */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-gray-600">Stroke</label>
+          <Label className="mb-2 block text-xs text-muted-foreground">Stroke</Label>
           <div className="flex flex-wrap gap-1.5">
             {PRESET_COLORS.map((color) => (
               <button
                 key={color}
                 onClick={() => updateElement({ strokeColor: color })}
-                className={`h-6 w-6 rounded-md border-2 transition-all ${
-                  selectedElement.strokeColor === color
-                    ? "scale-110 border-violet-500"
-                    : "border-gray-200 hover:border-gray-400"
-                }`}
+                className={cn(
+                  "h-6 w-6 rounded-base border-2 border-border transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
+                  selectedElement.strokeColor === color &&
+                    "scale-110 ring-2 ring-ring ring-offset-2",
+                )}
                 style={{ backgroundColor: color }}
               />
             ))}
@@ -109,15 +117,14 @@ export function PropertyPanel({ boardId }: Props) {
         {/* Fill Color - only for shapes */}
         {(selectedElement.type === "rectangle" || selectedElement.type === "circle") && (
           <div>
-            <label className="mb-2 block text-xs font-medium text-gray-600">Fill</label>
+            <Label className="mb-2 block text-xs text-muted-foreground">Fill</Label>
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => updateElement({ fill: undefined })}
-                className={`relative h-6 w-6 rounded-md border-2 transition-all ${
-                  !selectedElement.fill
-                    ? "scale-110 border-violet-500"
-                    : "border-gray-200 hover:border-gray-400"
-                }`}
+                className={cn(
+                  "relative h-6 w-6 rounded-base border-2 border-border transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
+                  !selectedElement.fill && "scale-110 ring-2 ring-ring ring-offset-2",
+                )}
                 style={{
                   background:
                     "linear-gradient(135deg, #fff 45%, #ff0000 45%, #ff0000 55%, #fff 55%)",
@@ -128,11 +135,10 @@ export function PropertyPanel({ boardId }: Props) {
                 <button
                   key={color}
                   onClick={() => updateElement({ fill: color })}
-                  className={`h-6 w-6 rounded-md border-2 transition-all ${
-                    selectedElement.fill === color
-                      ? "scale-110 border-violet-500"
-                      : "border-gray-200 hover:border-gray-400"
-                  }`}
+                  className={cn(
+                    "h-6 w-6 rounded-base border-2 border-border transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
+                    selectedElement.fill === color && "scale-110 ring-2 ring-ring ring-offset-2",
+                  )}
                   style={{ backgroundColor: color }}
                 />
               ))}
@@ -142,40 +148,40 @@ export function PropertyPanel({ boardId }: Props) {
 
         {/* Stroke Width */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-gray-600">
+          <Label className="mb-2 block text-xs text-muted-foreground">
             Stroke width: {selectedElement.strokeWidth}px
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="20"
-            value={selectedElement.strokeWidth}
-            onChange={(e) => updateElement({ strokeWidth: Number(e.target.value) })}
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-violet-500"
+          </Label>
+          <Slider
+            min={1}
+            max={20}
+            value={[selectedElement.strokeWidth]}
+            onValueChange={(value) => updateElement({ strokeWidth: value[0] })}
           />
         </div>
 
         {/* Line Style */}
         <div>
-          <label className="mb-2 block text-xs font-medium text-gray-600">Stroke style</label>
+          <Label className="mb-2 block text-xs text-muted-foreground">Stroke style</Label>
           <div className="flex gap-2">
             <button
               onClick={() => updateElement({ strokeDashArray: undefined })}
-              className={`flex h-8 flex-1 items-center justify-center rounded-md border-2 transition-all ${
+              className={cn(
+                "flex h-8 flex-1 items-center justify-center rounded-base border-2 border-border transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
                 !selectedElement.strokeDashArray
-                  ? "border-violet-500 bg-violet-50"
-                  : "border-gray-200 hover:border-gray-400"
-              }`}
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-secondary-background hover:bg-accent hover:text-accent-foreground",
+              )}
             >
               <div className="h-0.5 w-8 bg-current" />
             </button>
             <button
               onClick={() => updateElement({ strokeDashArray: [10, 5] })}
-              className={`flex h-8 flex-1 items-center justify-center rounded-md border-2 transition-all ${
+              className={cn(
+                "flex h-8 flex-1 items-center justify-center rounded-base border-2 border-border transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-hidden",
                 selectedElement.strokeDashArray
-                  ? "border-violet-500 bg-violet-50"
-                  : "border-gray-200 hover:border-gray-400"
-              }`}
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-secondary-background hover:bg-accent hover:text-accent-foreground",
+              )}
             >
               <div className="w-8 border-t-2 border-dashed border-current" />
             </button>

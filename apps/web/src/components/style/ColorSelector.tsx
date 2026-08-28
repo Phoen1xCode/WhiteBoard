@@ -17,7 +17,7 @@ interface ColorSelectorProps {
 export function ColorSelector({ value, onChange, presetColors }: ColorSelectorProps) {
   return (
     <div className="space-y-3">
-      <Label className="text-xs font-medium text-muted-foreground">线条颜色</Label>
+      <Label className="text-xs font-base text-muted-foreground">线条颜色</Label>
       <div className="flex items-center gap-3">
         <Popover>
           <PopoverTrigger asChild>
@@ -58,8 +58,8 @@ export function ColorSelector({ value, onChange, presetColors }: ColorSelectorPr
                       size="icon"
                       onClick={() => onChange(color)}
                       className={cn(
-                        "h-7 w-7 rounded-md border-2 p-0 transition-all hover:scale-110",
-                        value === color ? "ring-2 ring-primary ring-offset-2" : "border-border",
+                        "h-7 w-7 rounded-base border-2 p-0 transition-all hover:scale-110",
+                        value === color ? "ring-2 ring-ring ring-offset-2" : "border-border",
                       )}
                       style={{ backgroundColor: color }}
                       aria-label={`Select color ${color}`}
