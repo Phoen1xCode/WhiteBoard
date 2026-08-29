@@ -73,6 +73,27 @@ describe("board routes", () => {
     expect(mocks.service.createBoard).toHaveBeenCalledWith("Untitled Board", user.id);
   });
 
+  it("gets a board and updates its title", async () => {
+    const app = createApp();
+    const fetched = await app.request(`/api/v1/boards/${board.id}`, {
+      headers: authorizationHeaders(),
+    });
+    const updated = await app.request(`/api/v1/boards/${board.id}`, {
+      method: "PATCH",
+      headers: {
+        ...authorizationHeaders(),
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ title: "Roadmap" }),
+    });
+
+    expect(fetched.status).toBe(200);
+    expect(await fetched.json()).toEqual(board);
+    expect(mocks.service.getBoard).toHaveBeenCalledWith(board.id, user.id);
+    expect(updated.status).toBe(200);
+    expect(mocks.service.updateBoardTitle).toHaveBeenCalledWith(board.id, "Roadmap", user.id);
+  });
+
   it("validates updates and deletes without a response body", async () => {
     const app = createApp();
     const invalid = await app.request(`/api/v1/boards/${board.id}`, {

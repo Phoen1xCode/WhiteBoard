@@ -63,14 +63,15 @@ curl http://localhost:4000/
 
 ## 常用命令
 
-| 仓库根目录命令                               | 作用                   |
-| -------------------------------------------- | ---------------------- |
-| `pnpm dev:server`                            | watch 模式启动后端     |
-| `pnpm --filter @whiteboard/server start`     | 启动后端，不启用 watch |
-| `pnpm --filter @whiteboard/server test`      | 运行后端测试           |
-| `pnpm --filter @whiteboard/server typecheck` | 后端 TypeScript 检查   |
-| `pnpm prisma:generate`                       | 生成 Prisma Client     |
-| `pnpm prisma:migrate`                        | 创建并执行开发迁移     |
+| 仓库根目录命令                                   | 作用                   |
+| ------------------------------------------------ | ---------------------- |
+| `pnpm dev:server`                                | watch 模式启动后端     |
+| `pnpm --filter @whiteboard/server start`         | 启动后端，不启用 watch |
+| `pnpm --filter @whiteboard/server test`          | 运行后端测试           |
+| `pnpm --filter @whiteboard/server test:coverage` | 运行测试并生成覆盖率   |
+| `pnpm --filter @whiteboard/server typecheck`     | 后端 TypeScript 检查   |
+| `pnpm prisma:generate`                           | 生成 Prisma Client     |
+| `pnpm prisma:migrate`                            | 创建并执行开发迁移     |
 
 Prisma Client 生成到 `prisma/generated`，源码通过 `@generated/*` 引用。
 
@@ -252,8 +253,9 @@ Socket event -> service -> db
 ## 测试
 
 ```bash
-pnpm --filter @whiteboard/server test
+pnpm test:server
+pnpm test:server:coverage
 pnpm --filter @whiteboard/server typecheck
 ```
 
-当前测试覆盖 HTTP 路由、请求校验、认证中间件、统一错误格式和主要 handler 接线。测试使用服务 mock，不连接真实 PostgreSQL；数据库事务和 Socket.IO 协作流需要单独的集成测试环境。
+测试覆盖 HTTP 路由、请求校验、认证和权限边界、白板状态变换、事务及幂等分支、限流、Presence 和 Socket.IO 房间协作。Socket 测试会启动随机本地端口并使用真实客户端连接；Service 测试 mock Prisma 边界，因此不会连接或清理现有 PostgreSQL 数据库。覆盖率报告生成到 `apps/server/coverage/`，核心源码最低要求为 lines/statements/functions 80%、branches 75%。

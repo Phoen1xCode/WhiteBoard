@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HttpError } from "@/lib/errors";
+
 const mocks = vi.hoisted(() => ({
   authHandler: vi.fn(),
   resolveAccessToken: vi.fn(),
@@ -133,6 +135,52 @@ describe("auth routes", () => {
       error: { code: "RATE_LIMITED", message: "Too many requests" },
     });
     expect(mocks.service.login).not.toHaveBeenCalled();
+  });
+
+  it("logs in, refreshes a session and returns the current user", async () => {
+    const { app } = setup();
+    const loggedIn = await app.request("/api/v1/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: user.email, password: "password123" }),
+    });
+    const refreshed = await app.request("/api/v1/auth/refresh", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ refreshToken: "session-token" }),
+    });
+    const me = await app.request("/api/v1/auth/me", {
+      headers: { authorization: "Bearer session-token" },
+    });
+
+    expect(loggedIn.status).toBe(200);
+    expect(refreshed.status).toBe(200);
+    expect(mocks.service.login).toHaveBeenCalledWith(
+      { email: user.email, password: "password123" },
+      expect.any(Headers),
+    );
+    expect(mocks.service.refresh).toHaveBeenCalledWith("session-token");
+    expect(await me.json()).toEqual({ user });
+    expect(mocks.service.getMe).toHaveBeenCalledWith(user.id);
+  });
+
+  it("disconnects user sockets even when session revocation fails", async () => {
+    mocks.service.logout.mockRejectedValue(
+      new HttpError(500, "INTERNAL_SERVER_ERROR", "session store unavailable"),
+    );
+    const { app, onLogout } = setup();
+
+    const response = await app.request("/api/v1/auth/logout", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer session-token",
+        "content-type": "application/json",
+      },
+      body: "{}",
+    });
+
+    expect(response.status).toBe(500);
+    expect(onLogout).toHaveBeenCalledWith(user.id);
   });
 
   it("registers and logs out through the auth service", async () => {

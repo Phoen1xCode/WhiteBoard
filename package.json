@@ -6,6 +6,8 @@
     "dev:web": "pnpm --filter @whiteboard/web dev",
     "dev:server": "pnpm --filter @whiteboard/server dev",
     "build:web": "pnpm --filter @whiteboard/web build",
+    "test:server": "pnpm --filter @whiteboard/server test",
+    "test:server:coverage": "pnpm --filter @whiteboard/server test:coverage",
     "typecheck": "pnpm --filter @whiteboard/shared type-check && pnpm --filter @whiteboard/server typecheck && pnpm --filter @whiteboard/web typecheck",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

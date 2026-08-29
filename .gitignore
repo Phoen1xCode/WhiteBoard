@@ -33,8 +33,9 @@ dist-ssr
 .agents
 .claude
 
-# Generated caches
+# Generated caches and reports
 **/.tanstack/
+**/coverage/
 **/prisma/generated
 
 # Documentation
